@@ -2,7 +2,7 @@ import {Component} from "react";
 import {PROJECTS_DATA} from "../../../data/pages/projects/ProjectsProperties";
 import {ProjectsListElem} from "./ProjectsListElem";
 import '../../../styles/pages/Projects.scss';
-import {ProjectsListViewProps} from "../../../model/pages/projects/ProjectsListViewProps";
+import type {ProjectsListViewProps} from "../../../model/pages/projects/ProjectsListViewProps";
 
 export class ProjectsListView extends Component<ProjectsListViewProps> {
     render() {

@@ -3,6 +3,7 @@ import reflexImg from "../../../images/pages/projects/reflex.jpg"
 import postImg from "../../../images/pages/projects/post.jpg"
 import edtlImg from "../../../images/pages/projects/edtl.jpg"
 import rideImg from "../../../images/pages/projects/ride.jpg"
+import type {ProjectModel} from "../../../model/pages/projects/ProjectModel";
 
 export const PROJECTS_DATA: ProjectModel[] = [
     {

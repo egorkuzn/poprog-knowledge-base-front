@@ -1,4 +1,4 @@
-import {NavbarState} from "./NavbarState";
+import type {NavbarState} from "./NavbarState";
 
 /**
  * Описываем принимаемые параметры компонента

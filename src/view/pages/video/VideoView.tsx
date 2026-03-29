@@ -1,7 +1,7 @@
-import App from "../../../App";
+import BodyView from "../BodyView";
 
-export function VideoView(props: any) {
-    return (App(page()))
+export function VideoView() {
+    return (BodyView(page()))
 }
 
 function page() {

@@ -1,4 +1,4 @@
-import {FooterRawData} from "../FooterRawData";
+import type {FooterRawData} from "../FooterRawData";
 
 export interface FooterRowProp {
     name: string,

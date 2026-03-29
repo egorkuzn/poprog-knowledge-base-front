@@ -1,3 +1,3 @@
-interface ProjectViewBlockState {
+export interface ProjectViewBlockState {
     id: string
 }

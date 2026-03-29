@@ -1,5 +1,5 @@
-import React, {Component, ReactElement} from "react";
-import {NavbarElementProp} from "../../../model/navbar/NavbarElementProp";
+import {Component, type ReactElement} from "react";
+import type {NavbarElementProp} from "../../../model/navbar/NavbarElementProp";
 import {Link} from "react-router";
 
 /**

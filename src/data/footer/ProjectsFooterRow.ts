@@ -1,5 +1,5 @@
-import {FooterRawData} from "../../model/footer/FooterRawData";
-import {FooterRawDataElement} from "../../model/footer/FooterRawDataElement";
+import type {FooterRawData} from "../../model/footer/FooterRawData";
+import type {FooterRawDataElement} from "../../model/footer/FooterRawDataElement";
 
 export class ProjectsFooterRow implements FooterRawData {
     data: FooterRawDataElement[] = [

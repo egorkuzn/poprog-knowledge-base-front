@@ -1,12 +1,12 @@
 import {useCallback} from "react";
 import {ProjectsFooterRow} from "../../../data/footer/ProjectsFooterRow";
 import {getGroupedPublications, getGroupedStudentWorks} from "../../../api/knowledgeBaseApi";
-import {FooterRawDataElement} from "../../../model/footer/FooterRawDataElement";
+import type {FooterRawDataElement} from "../../../model/footer/FooterRawDataElement";
 import {useRemoteData} from "../../../hooks/useRemoteData";
 import {FooterRow} from "./FooterRow";
 import {FooterContactsRowView} from "./FooterContactsRowView";
 
-export function Footer(props: any) {
+export function Footer() {
     const loadWorks = useCallback(() => getGroupedStudentWorks(), []);
     const loadPublications = useCallback(() => getGroupedPublications(), []);
     const worksState = useRemoteData(loadWorks);
@@ -21,7 +21,6 @@ export function Footer(props: any) {
         title: item.date,
         hash: item.date
     })) ?? [];
-
     return (
         <div className="Footer">
             <FooterRow name="Проекты" pathname="/projects" rowData={new ProjectsFooterRow()}/>

@@ -1,4 +1,4 @@
-import {FooterRawDataElement} from "./FooterRawDataElement";
+import type {FooterRawDataElement} from "./FooterRawDataElement";
 
 export interface FooterRawData {
     data: FooterRawDataElement[]

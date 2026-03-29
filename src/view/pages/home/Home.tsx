@@ -1,11 +1,10 @@
-import App from "../../../App";
+import BodyView from "../BodyView";
 import '../../../styles/pages/Home.scss';
-import React from 'react';
 import RotatingText from './components/RotatingText';
 
-export function Home(props: any) {
+export function Home() {
     return (
-        App(Page())
+        BodyView(Page())
     )
 }
 

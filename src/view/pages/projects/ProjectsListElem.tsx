@@ -1,7 +1,7 @@
-import React, {Component} from "react";
-import {ProjectsListElemProp} from "../../../model/pages/projects/ProjectsListElemProp";
+import {Component} from "react";
+import type {ProjectsListElemProp} from "../../../model/pages/projects/ProjectsListElemProp";
 import {Link} from "react-router";
-import {ProjectsListElemState} from "../../../model/pages/projects/ProjectsListElemState";
+import type {ProjectsListElemState} from "../../../model/pages/projects/ProjectsListElemState";
 import {PROJECTS_IMAGES} from "../../../data/pages/projects/ProjectsProperties";
 
 export class ProjectsListElem extends Component<ProjectsListElemProp, ProjectsListElemState> {

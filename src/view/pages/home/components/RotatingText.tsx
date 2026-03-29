@@ -1,5 +1,6 @@
-import React, {useEffect, useState} from 'react';
+import {useEffect, useState} from 'react';
 import {HOME_DATA} from "../../../../data/pages/home/Home";
+import type {RotatingTextProps} from "../../../../model/pages/home/RotatingTextProps";
 
 export function RotatingText(
     {

@@ -1,8 +1,8 @@
-import App from "../../../App";
+import BodyView from "../BodyView";
 import {ProjectsViewBlock} from "./ProjectsViewBlock";
 
-export function ProjectsView(props: any) {
-    return (App(page()))
+export function ProjectsView() {
+    return (BodyView(page()))
 }
 
 function page() {

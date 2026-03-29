@@ -1,5 +1,6 @@
-import {Component, ReactElement} from "react";
+import {Component, type ReactElement} from "react";
 import {ProjectsListView} from "./ProjectsListView";
+import type {ProjectViewBlockState} from "../../../model/pages/projects/ProjectViewBlockState";
 
 export class ProjectsViewBlock extends Component<{}, ProjectViewBlockState> {
     state: ProjectViewBlockState = {

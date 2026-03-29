@@ -1,15 +1,16 @@
-import {JSX, useCallback} from "react";
-import App from "../../../App";
+import {useCallback} from "react";
+import type {JSX} from "react";
+import BodyView from "../BodyView";
 import "../../../styles/pages/Publications.scss";
 import {getGroupedPublications} from "../../../api/knowledgeBaseApi";
-import {PublicationModel, PublicationsByDateDto} from "../../../api/types";
+import type {PublicationModel, PublicationsByDateDto} from "../../../api/types";
 import {useRemoteData} from "../../../hooks/useRemoteData";
 
-export function PublicationsView(props: any) {
+export function PublicationsView() {
     const loadPublications = useCallback(() => getGroupedPublications(), []);
     const {data, error, isLoading} = useRemoteData(loadPublications);
 
-    return App(page(data, isLoading, error));
+    return BodyView(page(data, isLoading, error));
 }
 
 function renderPublicationLink(publication: PublicationModel, element: JSX.Element) {

@@ -1,15 +1,15 @@
 import {useCallback} from "react";
-import App from "../../../App";
+import BodyView from "../BodyView";
 import "../../../styles/pages/Works.scss";
 import {getGroupedStudentWorks} from "../../../api/knowledgeBaseApi";
-import {WorkModel, WorksByProjectTypeDto} from "../../../api/types";
+import type {WorkModel, WorksByProjectTypeDto} from "../../../api/types";
 import {useRemoteData} from "../../../hooks/useRemoteData";
 
-export function WorksView(props: any) {
+export function WorksView() {
     const loadWorks = useCallback(() => getGroupedStudentWorks(), []);
     const {data, error, isLoading} = useRemoteData(loadWorks);
 
-    return App(page(data, isLoading, error));
+    return BodyView(page(data, isLoading, error));
 }
 
 function page(worksData: WorksByProjectTypeDto[] | null, isLoading: boolean, error: string | null) {

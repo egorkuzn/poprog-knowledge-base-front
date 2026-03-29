@@ -1,6 +1,6 @@
-import {Component, ReactElement} from "react";
-import {FooterRowProp} from "../../../model/footer/view/FooterRowProp";
-import {FooterRowState} from "../../../model/footer/view/FooterRowState";
+import {Component, type ReactElement} from "react";
+import type {FooterRowProp} from "../../../model/footer/view/FooterRowProp";
+import type {FooterRowState} from "../../../model/footer/view/FooterRowState";
 import {Link} from "react-router";
 
 export class FooterRow extends Component<FooterRowProp, FooterRowState> {

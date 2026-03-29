@@ -1,5 +1,5 @@
 import {getJson} from "./http";
-import {PublicationsByDateDto, SearchResponse, WorksByProjectTypeDto} from "./types";
+import type {PublicationsByDateDto, SearchResponse, WorksByProjectTypeDto} from "./types";
 
 export function getGroupedPublications(): Promise<PublicationsByDateDto[]> {
     return getJson<PublicationsByDateDto[]>("/api/publications/grouped");

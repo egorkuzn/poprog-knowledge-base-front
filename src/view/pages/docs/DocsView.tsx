@@ -1,7 +1,7 @@
-import App from "../../../App";
+import BodyView from "../BodyView";
 
-export function DocsView(props: any) {
-    return (App(page()))
+export function DocsView() {
+    return (BodyView(page()))
 }
 
 function page() {
