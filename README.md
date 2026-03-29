@@ -2,5 +2,17 @@
 
 Demo по ссылке: http://95.174.91.85/
 
+## Backend API
+
+Локально фронтенд ожидает backend на `http://localhost:8080` и в dev-режиме проксирует `/api` через CRA `proxy`, поэтому для обычного запуска переменная окружения не нужна.
+
+Пример:
+
+```bash
+npm start
+```
+
+Если нужен другой backend-адрес, можно переопределить его через `REACT_APP_API_BASE_URL`.
+
 ## Проекты
 скопировать с https://aws.amazon.com/ru/products/?nc2=h_prod_fs_prod&aws-products-all.sort-by=item.additionalFields.productNameLowercase&aws-products-all.sort-order=asc&awsf.re%3AInvent=*all&awsf.Free%20Tier%20Type=*all&awsf.tech-category=*all

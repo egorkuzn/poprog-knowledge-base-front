@@ -1,51 +1,53 @@
+import {JSX, useCallback} from "react";
 import App from "../../../App";
-import '../../../styles/pages/Publications.scss';
-import {PUBLICATIONS_DATA} from "../../../data/pages/publications/PublicationsClassProperties";
-import {JSX} from "react";
-import {Link} from "react-router";
+import "../../../styles/pages/Publications.scss";
+import {getGroupedPublications} from "../../../api/knowledgeBaseApi";
+import {PublicationModel, PublicationsByDateDto} from "../../../api/types";
+import {useRemoteData} from "../../../hooks/useRemoteData";
 
 export function PublicationsView(props: any) {
-    return (
-        App(page())
-    )
+    const loadPublications = useCallback(() => getGroupedPublications(), []);
+    const {data, error, isLoading} = useRemoteData(loadPublications);
+
+    return App(page(data, isLoading, error));
 }
 
-function pa(publication: PublicationModel, element: JSX.Element) {
-    return (publication.link === "") ? element :
-         (
-            <a href={publication.link} target="_blank" rel="noopener noreferrer">
-                {element}
-            </a>
-        )
+function renderPublicationLink(publication: PublicationModel, element: JSX.Element) {
+    return publication.link === "" ? element : (
+        <a href={publication.link} target="_blank" rel="noopener noreferrer">
+            {element}
+        </a>
+    );
 }
 
-function page() {
+function page(publications: PublicationsByDateDto[] | null, isLoading: boolean, error: string | null) {
     return (
         <main>
             <div className="publications-page">
                 <h1>Публикации</h1>
-                {
-                    PUBLICATIONS_DATA.map(publications => {
-                        return (
-                            <div>
-                                <h2> {publications.year} </h2>
-                                {publications.publications.map(p => {
-                                    return (
-                                        <div className="publication">
-                                            <div className="publication-authors-titles">
-                                                {pa(p, <p>{p.authors}</p>)}
-                                                {pa(p, <p>{p.theme}</p>)}
-                                            </div>
-                                            {pa(p, <p className="publication-published"> {p.published} </p>)}
-                                        </div>
-                                    )
-                                })}
+                {isLoading && <p className="remote-data-state">Загрузка публикаций...</p>}
+                {error && <p className="remote-data-state remote-data-state-error">Не удалось загрузить публикации: {error}</p>}
+                {!isLoading && !error && publications?.length === 0 && (
+                    <p className="remote-data-state">Публикации пока не найдены.</p>
+                )}
+                {publications?.map((publicationsByDate) => (
+                    <div id={publicationsByDate.date} key={publicationsByDate.date}>
+                        <h2>{publicationsByDate.date}</h2>
+                        {publicationsByDate.publications.map((publication, index) => (
+                            <div className="publication" key={`${publicationsByDate.date}-${index}-${publication.theme}`}>
+                                <div className="publication-authors-titles">
+                                    {renderPublicationLink(publication, <p>{publication.authors}</p>)}
+                                    {renderPublicationLink(publication, <p>{publication.theme}</p>)}
+                                </div>
+                                {renderPublicationLink(
+                                    publication,
+                                    <p className="publication-published">{publication.published}</p>
+                                )}
                             </div>
-                        )
-                    })
-                }
-
+                        ))}
+                    </div>
+                ))}
             </div>
         </main>
-    )
+    );
 }
