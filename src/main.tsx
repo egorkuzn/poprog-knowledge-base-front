@@ -9,7 +9,6 @@ import {PublicationsView} from "./view/pages/publications/PublicationsView";
 import {DocsView} from "./view/pages/docs/DocsView";
 import {Home} from "./view/pages/home/Home";
 import { createBrowserRouter} from "react-router-dom";
-import { App } from "./App";
 
 const router = createBrowserRouter([
     {
@@ -39,10 +38,6 @@ const router = createBrowserRouter([
     {
         path: "/video",
         element: <VideoView/>
-    },
-    {
-        path: "/app",
-        Component: App
     },
     {
         path: "*",
