@@ -1,42 +1,57 @@
-import IAIELogo from '../../../images/iaie-icon.png'
-import {Component, type ReactElement} from "react"
-import {NavbarElement} from "./NavbarElement";
+import {Link, NavLink} from "react-router-dom";
 import {NavigationTree} from "../../../data/navbar/NavigationTree";
-import type { NavbarState } from "../../../model/navbar/NavbarState";
+import searchIcon from "../../../assets/home/icons/search.svg";
+import accountIcon from "../../../assets/home/icons/account.svg";
+import supportIcon from "../../../assets/home/icons/support.svg";
 
-/**
- * Шапка навигации
- */
-export class Navbar extends Component<any, NavbarState> {
-    location(): string {
-        return window.location.pathname
-    }
+const topLinks = [
+    {label: "Помочь проекту", href: "#support", icon: supportIcon},
+    {label: "Свяжитесь с нами", href: "#contacts"},
+    {label: "Poprog маркет", href: "#market"},
+    {label: "Поддержка", href: "#support"},
+    {label: "Мой аккаунт", href: "#account", icon: accountIcon}
+];
 
-    state: NavbarState = {
-        active: this.location(),
-        pressed: this.location(),
-        entered: ""
-    }
-
-    render(): ReactElement {
-        console.log(this.state.active)
-        return (
-            <nav>
-                <a href="https://www.iae.nsk.su/ru/"> <img src={IAIELogo} alt="IAIE logo"/></a>
-                <div className="nav-elem-box">
-                    {NavigationTree.map ((entry) => <NavbarElement path={entry[0]}
-                                                  title={entry[1]}
-                                                  navbarStateValue={this.state}
-                                                  onChange={(newSate) => {
-                                                      newSate.active = this.location()
-                                                      this.setState(newSate)
-                                                  }}/>
-                                                )
-                
-                                }
+export function Navbar() {
+    return (
+        <header className="site-header">
+            <div className="site-header-top">
+                <div className="site-header-top-links">
+                    {topLinks.map((link) => (
+                        <a className="site-header-top-link" href={link.href} key={link.label}>
+                            <span>{link.label}</span>
+                            {link.icon && <img alt="" aria-hidden="true" src={link.icon}/>}
+                        </a>
+                    ))}
                 </div>
-            </nav>
-        )
-    }
-}
+            </div>
 
+            <div className="site-header-main">
+                <div className="site-header-main-left">
+                    <Link className="site-brand" to="/home">Poprog</Link>
+
+                    <nav className="site-navigation" aria-label="Главная навигация">
+                        {NavigationTree.map(([path, title]) => (
+                            <NavLink
+                                className={({isActive}) => `site-navigation-link${isActive ? " site-navigation-link-active" : ""}`}
+                                key={path}
+                                to={path}
+                            >
+                                {title}
+                            </NavLink>
+                        ))}
+                    </nav>
+                </div>
+
+                <div className="site-header-actions">
+                    <button className="site-search-button" type="button">
+                        <img alt="" aria-hidden="true" src={searchIcon}/>
+                        <span>Поиск</span>
+                    </button>
+                    <button className="site-console-button" type="button">Вход в консоль</button>
+                    <button className="site-account-button" type="button">Создать аккаунт</button>
+                </div>
+            </div>
+        </header>
+    );
+}

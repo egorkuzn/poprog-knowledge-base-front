@@ -1,6 +1,4 @@
-export var NavigationTree =  [["/home", "Главная"],
-        ["/projects", "Проекты"],
+export var NavigationTree =  [["/projects", "Проекты"],
         ["/docs", "Документация и инструкции"],
         ["/publications", "Публикации"],
-        ["/works", "Дипломные работы и диссертации"],
-        ["/video", "Видео"]]
+        ["/works", "Дипломные работы и диссертации"]]
