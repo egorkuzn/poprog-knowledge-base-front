@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128">
+  <mask id="p-cutout">
+    <rect width="128" height="128" fill="black"/>
+    <circle cx="64" cy="64" r="64" fill="white"/>
+    <rect x="52" y="30" width="22" height="74" rx="11" fill="black"/>
+    <path
+      d="M63 30H79C97 30 110 41 110 57C110 73 97 84 79 84H63V69H78C87 69 94 65 94 57C94 49 87 45 78 45H63Z"
+      fill="black"
+    />
+  </mask>
+
+  <rect width="128" height="128" fill="white" mask="url(#p-cutout)"/>
+</svg>

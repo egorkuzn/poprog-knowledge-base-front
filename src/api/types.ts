@@ -24,15 +24,20 @@ export interface WorksByProjectTypeDto {
 
 export interface SearchResultItem {
     type: string
-    id?: number
+    id?: number | string
+    sourceId?: number
     authors?: string
     theme?: string
     published?: string
     link?: string
     title?: string
     hash?: string
+    groupTitle?: string | null
+    groupHash?: string | null
 }
 
 export interface SearchResponse {
-    results: SearchResultItem[]
+    query?: string
+    total?: number
+    items: SearchResultItem[]
 }
