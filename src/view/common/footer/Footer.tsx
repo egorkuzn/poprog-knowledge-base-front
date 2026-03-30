@@ -23,12 +23,21 @@ export function Footer() {
         hash: item.hash
     })) ?? [];
 
+    const openSearchFromFooter = () => {
+        window.scrollTo({
+            top: 0,
+            behavior: "smooth"
+        });
+
+        window.dispatchEvent(new CustomEvent("site-search:open"));
+    };
+
     return (
         <footer className="site-footer">
             <div className="site-footer-top">
                 <button className="site-footer-ride-button" type="button">Создать аккаунт RIDE</button>
 
-                <button className="site-footer-search-button" type="button">
+                <button className="site-footer-search-button" onClick={openSearchFromFooter} type="button">
                     <span>Поиск</span>
                     <img alt="" aria-hidden="true" src={searchIcon}/>
                 </button>

@@ -1,9 +1,13 @@
-import {useEffect, useRef, useState} from "react";
+import {useEffect, useMemo, useRef, useState} from "react";
 import {Link, NavLink, useLocation} from "react-router-dom";
+import {searchKnowledgeBase} from "../../../api/knowledgeBaseApi";
+import type {SearchResultItem} from "../../../api/types";
 import {NavigationTree} from "../../../data/navbar/NavigationTree";
 import searchIcon from "../../../assets/home/icons/search.svg";
 import accountIcon from "../../../assets/home/icons/account.svg";
 import supportIcon from "../../../assets/home/icons/support.svg";
+
+type SearchState = "idle" | "loading" | "ready" | "error";
 
 const topLinks = [
     {label: "Помочь проекту", href: "#support", icon: supportIcon},
@@ -13,13 +17,71 @@ const topLinks = [
     {label: "Мой аккаунт", href: "#account", icon: accountIcon}
 ];
 
+function getSearchResultTitle(item: SearchResultItem): string {
+    return item.theme ?? item.title ?? "Без названия";
+}
+
+function getSearchResultDescription(item: SearchResultItem): string {
+    const fragments = [item.authors, item.published].filter(Boolean);
+    return fragments.length > 0 ? fragments.join(" · ") : "Материал портала";
+}
+
+function getSearchResultTypeLabel(item: SearchResultItem): string {
+    const normalizedType = item.type.toLowerCase();
+
+    if (normalizedType.includes("publication")) {
+        return "Публикация";
+    }
+
+    if (normalizedType.includes("work") || normalizedType.includes("diploma") || normalizedType.includes("dissertation")) {
+        return "Работа";
+    }
+
+    if (normalizedType.includes("project")) {
+        return "Проект";
+    }
+
+    return "Материал";
+}
+
+function getSearchResultTarget(item: SearchResultItem): string {
+    const normalizedType = item.type.toLowerCase();
+
+    if (normalizedType.includes("publication")) {
+        return "/publications";
+    }
+
+    if (normalizedType.includes("work") || normalizedType.includes("diploma") || normalizedType.includes("dissertation")) {
+        return "/works";
+    }
+
+    if (normalizedType.includes("project")) {
+        return "/projects";
+    }
+
+    if (normalizedType.includes("doc")) {
+        return "/docs";
+    }
+
+    return "/home";
+}
+
 export function Navbar() {
     const [isMenuOpen, setIsMenuOpen] = useState(false);
+    const [isSearchOpen, setIsSearchOpen] = useState(false);
+    const [searchQuery, setSearchQuery] = useState("");
+    const [searchState, setSearchState] = useState<SearchState>("idle");
+    const [searchResults, setSearchResults] = useState<SearchResultItem[]>([]);
+    const [searchError, setSearchError] = useState("");
     const menuRef = useRef<HTMLDivElement | null>(null);
+    const inputRef = useRef<HTMLInputElement | null>(null);
+    const requestIdRef = useRef(0);
     const location = useLocation();
+    const trimmedQuery = searchQuery.trim();
 
     useEffect(() => {
         setIsMenuOpen(false);
+        setIsSearchOpen(false);
     }, [location.pathname]);
 
     useEffect(() => {
@@ -29,14 +91,123 @@ export function Navbar() {
             }
         };
 
+        const handleEscape = (event: KeyboardEvent) => {
+            if (event.key === "Escape") {
+                setIsMenuOpen(false);
+                setIsSearchOpen(false);
+            }
+        };
+
+        const handleOpenSearch = () => {
+            setIsMenuOpen(false);
+            setIsSearchOpen(true);
+        };
+
         document.addEventListener("mousedown", handleOutsideClick);
+        document.addEventListener("keydown", handleEscape);
+        window.addEventListener("site-search:open", handleOpenSearch);
+
         return () => {
             document.removeEventListener("mousedown", handleOutsideClick);
+            document.removeEventListener("keydown", handleEscape);
+            window.removeEventListener("site-search:open", handleOpenSearch);
         };
     }, []);
 
+    useEffect(() => {
+        if (!isSearchOpen) {
+            return;
+        }
+
+        const previousOverflow = document.body.style.overflow;
+        document.body.style.overflow = "hidden";
+        inputRef.current?.focus();
+
+        return () => {
+            document.body.style.overflow = previousOverflow;
+        };
+    }, [isSearchOpen]);
+
+    useEffect(() => {
+        if (!isSearchOpen || trimmedQuery.length === 0) {
+            setSearchState("idle");
+            setSearchResults([]);
+            setSearchError("");
+            return;
+        }
+
+        const currentRequestId = ++requestIdRef.current;
+        setSearchState("loading");
+        setSearchError("");
+
+        const timeoutId = window.setTimeout(async () => {
+            try {
+                const response = await searchKnowledgeBase(trimmedQuery, 8);
+
+                if (requestIdRef.current !== currentRequestId) {
+                    return;
+                }
+
+                setSearchResults(Array.isArray(response.items) ? response.items : []);
+                setSearchState("ready");
+            } catch (error) {
+                if (requestIdRef.current !== currentRequestId) {
+                    return;
+                }
+
+                setSearchResults([]);
+                setSearchState("error");
+                setSearchError(error instanceof Error ? error.message : "Не удалось выполнить поиск");
+            }
+        }, 250);
+
+        return () => {
+            window.clearTimeout(timeoutId);
+        };
+    }, [isSearchOpen, trimmedQuery]);
+
+    const searchResultContent = useMemo(() => {
+        if (trimmedQuery.length === 0) {
+            return <p className="site-search-status">Введите запрос, чтобы найти публикации и студенческие работы.</p>;
+        }
+
+        if (searchState === "loading") {
+            return <p className="site-search-status">Ищем материалы по порталу...</p>;
+        }
+
+        if (searchState === "error") {
+            return <p className="site-search-status site-search-status-error">Не удалось выполнить поиск: {searchError}</p>;
+        }
+
+        if (!Array.isArray(searchResults) || searchResults.length === 0) {
+            return <p className="site-search-status">Ничего не найдено. Попробуйте изменить запрос.</p>;
+        }
+
+        return (
+            <div className="site-search-results-list">
+                {searchResults.map((item, index) => (
+                    <Link
+                        className="site-search-result-card"
+                        key={`${item.type}-${item.id ?? item.hash ?? index}`}
+                        onClick={() => setIsSearchOpen(false)}
+                        to={getSearchResultTarget(item)}
+                    >
+                        <span className="site-search-result-type">{getSearchResultTypeLabel(item)}</span>
+                        <strong>{getSearchResultTitle(item)}</strong>
+                        <span>{getSearchResultDescription(item)}</span>
+                    </Link>
+                ))}
+            </div>
+        );
+    }, [searchError, searchResults, searchState, trimmedQuery]);
+
+    const toggleSearch = () => {
+        setIsMenuOpen(false);
+        setIsSearchOpen((isOpen) => !isOpen);
+    };
+
     return (
-        <header className="site-header">
+        <header className={`site-header${isSearchOpen ? " site-header-search-open" : ""}`}>
             <div className="site-header-top">
                 <div className="site-header-top-links">
                     {topLinks.map((link) => (
@@ -68,7 +239,10 @@ export function Navbar() {
                         <button
                             aria-expanded={isMenuOpen}
                             className={`site-navigation-link site-navigation-menu-button${isMenuOpen ? " site-navigation-link-active" : ""}`}
-                            onClick={() => setIsMenuOpen((isOpen) => !isOpen)}
+                            onClick={() => {
+                                setIsSearchOpen(false);
+                                setIsMenuOpen((isOpen) => !isOpen);
+                            }}
                             type="button"
                         >
                             <span aria-hidden="true" className="site-navigation-menu-icon">
@@ -114,7 +288,7 @@ export function Navbar() {
                     </div>
 
                     <div className="site-header-actions">
-                        <button className="site-search-button" type="button">
+                        <button className={`site-search-button${isSearchOpen ? " site-search-button-active" : ""}`} onClick={toggleSearch} type="button">
                             <img alt="" aria-hidden="true" src={searchIcon}/>
                             <span>Поиск</span>
                         </button>
@@ -123,6 +297,49 @@ export function Navbar() {
                     </div>
                 </div>
             </div>
+
+            {isSearchOpen && (
+                <>
+                    <button aria-label="Закрыть поиск" className="site-search-backdrop" onClick={() => setIsSearchOpen(false)} type="button"/>
+
+                    <div className="site-search-panel" role="dialog" aria-label="Поиск по порталу">
+                        <div className="site-search-toolbar">
+                            <label className="site-search-input-shell">
+                                <img alt="" aria-hidden="true" src={searchIcon}/>
+                                <input
+                                    onChange={(event) => setSearchQuery(event.target.value)}
+                                    placeholder="Я ищу..."
+                                    ref={inputRef}
+                                    type="search"
+                                    value={searchQuery}
+                                />
+                            </label>
+
+                            <button className="site-search-filter-button" type="button">
+                                <span aria-hidden="true" className="site-search-filter-icon">
+                                    <span/>
+                                    <span/>
+                                    <span/>
+                                </span>
+                                <span>Фильтр</span>
+                            </button>
+
+                            <button
+                                aria-label="Закрыть поиск"
+                                className="site-search-close-button"
+                                onClick={() => setIsSearchOpen(false)}
+                                type="button"
+                            >
+                                ×
+                            </button>
+                        </div>
+
+                        <div className="site-search-results">
+                            {searchResultContent}
+                        </div>
+                    </div>
+                </>
+            )}
         </header>
     );
 }
