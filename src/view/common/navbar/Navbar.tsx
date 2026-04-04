@@ -86,6 +86,10 @@ export function Navbar() {
 
     useEffect(() => {
         const handleOutsideClick = (event: MouseEvent) => {
+            if (typeof window !== "undefined" && window.matchMedia("(max-width: 720px)").matches && isMenuOpen) {
+                return;
+            }
+
             if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
                 setIsMenuOpen(false);
             }
@@ -112,7 +116,7 @@ export function Navbar() {
             document.removeEventListener("keydown", handleEscape);
             window.removeEventListener("site-search:open", handleOpenSearch);
         };
-    }, []);
+    }, [isMenuOpen]);
 
     useEffect(() => {
         if (!isSearchOpen) {
@@ -127,6 +131,19 @@ export function Navbar() {
             document.body.style.overflow = previousOverflow;
         };
     }, [isSearchOpen]);
+
+    useEffect(() => {
+        if (!isMenuOpen || typeof window === "undefined" || !window.matchMedia("(max-width: 720px)").matches) {
+            return;
+        }
+
+        const previousOverflow = document.body.style.overflow;
+        document.body.style.overflow = "hidden";
+
+        return () => {
+            document.body.style.overflow = previousOverflow;
+        };
+    }, [isMenuOpen]);
 
     useEffect(() => {
         if (!isSearchOpen || trimmedQuery.length === 0) {
@@ -208,75 +225,130 @@ export function Navbar() {
 
     return (
         <header className={`site-header${isSearchOpen ? " site-header-search-open" : ""}`}>
-            <div className="site-header-top">
-                <div className="site-header-top-links">
-                    {topLinks.map((link) => (
-                        <a className="site-header-top-link" href={link.href} key={link.label}>
-                            <span>{link.label}</span>
-                            {link.icon && <img alt="" aria-hidden="true" src={link.icon}/>}
-                        </a>
-                    ))}
+            <div className="site-header-stack">
+                <div className="site-header-top">
+                    <div className="site-header-top-links">
+                        {topLinks.map((link) => (
+                            <a className="site-header-top-link" href={link.href} key={link.label}>
+                                <span>{link.label}</span>
+                                {link.icon && <img alt="" aria-hidden="true" src={link.icon}/>}
+                            </a>
+                        ))}
+                    </div>
                 </div>
-            </div>
 
-            <div className="site-header-main">
-                <Link className="site-brand" to="/home">Poprog</Link>
+                <div className="site-header-main">
+                    <Link className="site-brand" to="/home">Poprog</Link>
 
-                <div className="site-header-main-content">
-                    <div className="site-navigation-shell" ref={menuRef}>
-                        <nav aria-label="Главная навигация" className="site-navigation">
-                            {NavigationTree.map(([path, title]) => (
-                                <NavLink
-                                    className={({isActive}) => `site-navigation-link${isActive ? " site-navigation-link-active" : ""}`}
-                                    key={path}
-                                    to={path}
-                                >
-                                    {title}
-                                </NavLink>
-                            ))}
-                        </nav>
-
-                        <button
-                            aria-expanded={isMenuOpen}
-                            className={`site-navigation-link site-navigation-menu-button${isMenuOpen ? " site-navigation-link-active" : ""}`}
-                            onClick={() => {
-                                setIsSearchOpen(false);
-                                setIsMenuOpen((isOpen) => !isOpen);
-                            }}
-                            type="button"
-                        >
-                            <span aria-hidden="true" className="site-navigation-menu-icon">
-                                <span/>
-                                <span/>
-                                <span/>
-                            </span>
-                            <span className="site-navigation-menu-label">Меню</span>
-                            <span aria-hidden="true" className="site-navigation-menu-caret"/>
-                        </button>
-
-                        {isMenuOpen && (
-                            <div className="site-navigation-dropdown">
+                    <div className="site-header-main-content">
+                        <div className="site-navigation-shell" ref={menuRef}>
+                            <nav aria-label="Главная навигация" className="site-navigation">
                                 {NavigationTree.map(([path, title]) => (
                                     <NavLink
-                                        className={({isActive}) => `site-navigation-link site-navigation-dropdown-link${isActive ? " site-navigation-link-active" : ""}`}
-                                        key={`dropdown-${path}`}
+                                        className={({isActive}) => `site-navigation-link${isActive ? " site-navigation-link-active" : ""}`}
+                                        key={path}
                                         to={path}
                                     >
                                         {title}
                                     </NavLink>
                                 ))}
+                            </nav>
 
-                                <div className="site-navigation-dropdown-divider"/>
+                            <button
+                                aria-expanded={isMenuOpen}
+                                className={`site-navigation-link site-navigation-menu-button${isMenuOpen ? " site-navigation-link-active" : ""}`}
+                                onClick={() => {
+                                    setIsSearchOpen(false);
+                                    setIsMenuOpen((isOpen) => !isOpen);
+                                }}
+                                type="button"
+                            >
+                                <span aria-hidden="true" className="site-navigation-menu-icon">
+                                    <span/>
+                                    <span/>
+                                    <span/>
+                                </span>
+                                <span aria-hidden="true" className="site-navigation-menu-close site-search-x-button"/>
+                                <span className="site-navigation-menu-copy">
+                                    <span className="site-navigation-menu-label">Меню</span>
+                                    <span aria-hidden="true" className="site-navigation-menu-caret">
+                                        <svg role="presentation" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16">
+                                            <path d="M8.00004 11C7.74004 11 7.49004 10.9 7.29004 10.71L3.79004 7.21005L5.20004 5.80005L7.99004 8.59005L10.78 5.80005L12.19 7.21005L8.69004 10.71C8.49004 10.91 8.24004 11 7.98004 11H8.00004Z"/>
+                                        </svg>
+                                    </span>
+                                </span>
+                            </button>
 
-                                {topLinks.map((link) => (
-                                    <a className="site-navigation-link site-navigation-dropdown-link" href={link.href} key={`top-${link.label}`}>
-                                        <span>{link.label}</span>
-                                        {link.icon && <img alt="" aria-hidden="true" src={link.icon}/>}
-                                    </a>
-                                ))}
+                            {isMenuOpen && (
+                                <div className="site-navigation-dropdown">
+                                    {NavigationTree.map(([path, title]) => (
+                                        <NavLink
+                                            className={({isActive}) => `site-navigation-link site-navigation-dropdown-link${isActive ? " site-navigation-link-active" : ""}`}
+                                            key={`dropdown-${path}`}
+                                            to={path}
+                                        >
+                                            {title}
+                                        </NavLink>
+                                    ))}
 
-                                <div className="site-navigation-dropdown-divider"/>
+                                    <div className="site-navigation-dropdown-actions">
+                                        <div className="site-navigation-dropdown-divider"/>
 
+                                        <button className="site-navigation-link site-navigation-dropdown-link" type="button">
+                                            Вход в консоль
+                                        </button>
+                                        <button className="site-navigation-link site-navigation-dropdown-link" type="button">
+                                            Создать аккаунт
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+
+                        <div className="site-header-actions">
+                            <button className={`site-search-button${isSearchOpen ? " site-search-button-active" : ""}`} onClick={toggleSearch} type="button">
+                                <img alt="" aria-hidden="true" src={searchIcon}/>
+                                <span>Поиск</span>
+                            </button>
+                            <button className="site-console-button" type="button">Вход в консоль</button>
+                            <button className="site-account-button" type="button">Создать аккаунт</button>
+                            <button className="site-mobile-account-button" type="button">
+                                <img alt="" aria-hidden="true" src={accountIcon}/>
+                            </button>
+                        </div>
+                    </div>
+
+                </div>
+
+                {isMenuOpen && (
+                    <div className="site-header-main-menu">
+                        <div className="site-header-main-menu-top-links">
+                            {topLinks.map((link) => (
+                                <a className="site-header-main-menu-top-link" href={link.href} key={`mobile-inline-${link.label}`}>
+                                    <span>{link.label}</span>
+                                    {link.icon && <img alt="" aria-hidden="true" src={link.icon}/>}
+                                </a>
+                            ))}
+                        </div>
+
+                        <div className="site-header-main-menu-links">
+                            {NavigationTree.map(([path, title]) => (
+                                <NavLink
+                                    className={({isActive}) => `site-navigation-link site-navigation-dropdown-link${isActive ? " site-navigation-link-active" : ""}`}
+                                    key={`mobile-${path}`}
+                                    to={path}
+                                >
+                                    {title}
+                                </NavLink>
+                            ))}
+                        </div>
+
+                        <div className="site-header-main-menu-extra">
+                            <div className="site-header-main-menu-actions">
+                                <button className="site-navigation-link site-navigation-dropdown-link" onClick={toggleSearch} type="button">
+                                    <img alt="" aria-hidden="true" src={searchIcon}/>
+                                    <span>Поиск</span>
+                                </button>
                                 <button className="site-navigation-link site-navigation-dropdown-link" type="button">
                                     Вход в консоль
                                 </button>
@@ -284,61 +356,63 @@ export function Navbar() {
                                     Создать аккаунт
                                 </button>
                             </div>
-                        )}
+                        </div>
                     </div>
+                )}
 
-                    <div className="site-header-actions">
-                        <button className={`site-search-button${isSearchOpen ? " site-search-button-active" : ""}`} onClick={toggleSearch} type="button">
-                            <img alt="" aria-hidden="true" src={searchIcon}/>
-                            <span>Поиск</span>
-                        </button>
-                        <button className="site-console-button" type="button">Вход в консоль</button>
-                        <button className="site-account-button" type="button">Создать аккаунт</button>
-                    </div>
-                </div>
-            </div>
-
-            {isSearchOpen && (
-                <>
-                    <button aria-label="Закрыть поиск" className="site-search-backdrop" onClick={() => setIsSearchOpen(false)} type="button"/>
-
+                {isSearchOpen && (
                     <div className="site-search-panel" role="dialog" aria-label="Поиск по порталу">
                         <div className="site-search-toolbar">
-                            <label className="site-search-input-shell">
-                                <img alt="" aria-hidden="true" src={searchIcon}/>
-                                <input
-                                    onChange={(event) => setSearchQuery(event.target.value)}
-                                    placeholder="Я ищу..."
-                                    ref={inputRef}
-                                    type="search"
-                                    value={searchQuery}
-                                />
-                            </label>
+                            <div className="site-search-toolbar-main">
+                                <label className="site-search-input-shell">
+                                    <img alt="" aria-hidden="true" src={searchIcon}/>
+                                    <input
+                                        onChange={(event) => setSearchQuery(event.target.value)}
+                                        placeholder="Я ищу..."
+                                        ref={inputRef}
+                                        type="search"
+                                        value={searchQuery}
+                                    />
+                                    {searchQuery.length > 0 && (
+                                        <button
+                                            aria-label="Очистить поле поиска"
+                                            className="site-search-clear-button site-search-x-button"
+                                            onClick={() => {
+                                                setSearchQuery("");
+                                                inputRef.current?.focus();
+                                            }}
+                                            type="button"
+                                        />
+                                    )}
+                                </label>
 
-                            <button className="site-search-filter-button" type="button">
-                                <span aria-hidden="true" className="site-search-filter-icon">
-                                    <span/>
-                                    <span/>
-                                    <span/>
-                                </span>
-                                <span>Фильтр</span>
-                            </button>
+                                <button className="site-search-filter-button" type="button">
+                                    <span aria-hidden="true" className="site-search-filter-icon">
+                                        <span/>
+                                        <span/>
+                                        <span/>
+                                    </span>
+                                    <span>Фильтр</span>
+                                </button>
+                            </div>
 
                             <button
                                 aria-label="Закрыть поиск"
-                                className="site-search-close-button"
+                                className="site-search-close-button site-search-x-button"
                                 onClick={() => setIsSearchOpen(false)}
                                 type="button"
-                            >
-                                ×
-                            </button>
+                            />
                         </div>
 
                         <div className="site-search-results">
                             {searchResultContent}
                         </div>
                     </div>
-                </>
+                )}
+            </div>
+
+            {isSearchOpen && (
+                <button aria-label="Закрыть поиск" className="site-search-backdrop" onClick={() => setIsSearchOpen(false)} type="button"/>
             )}
         </header>
     );
