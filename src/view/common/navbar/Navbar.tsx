@@ -6,6 +6,9 @@ import {NavigationTree} from "../../../data/navbar/NavigationTree";
 import searchIcon from "../../../assets/home/icons/search.svg";
 import accountIcon from "../../../assets/home/icons/account.svg";
 import supportIcon from "../../../assets/home/icons/support.svg";
+import arrowRightAltIcon from "../../../assets/home/icons/arrow-right-alt.svg";
+import caseOneImage from "../../../assets/home/cases/case-1.png";
+import caseTwoImage from "../../../assets/home/cases/case-2.png";
 
 type SearchState = "idle" | "loading" | "ready" | "error";
 
@@ -15,6 +18,44 @@ const topLinks = [
     {label: "Poprog маркет", href: "#market"},
     {label: "Поддержка", href: "#support"},
     {label: "Мой аккаунт", href: "#account", icon: accountIcon}
+];
+
+const projectsCategories = [
+    {
+        key: "languages",
+        label: "Языки программирования",
+        title: "Языки программирования",
+        description: "Программируйте ПЛК и микроконтроллеры на инновационных языках быстрее и проще",
+        centerLinkLabel: "Перейти в центр Языков программирования"
+    },
+    {
+        key: "ride",
+        label: "Облачная среда разработки RIDE",
+        title: "Облачная среда разработки RIDE",
+        description: "Создавайте, тестируйте и поддерживайте программы в единой среде разработки",
+        centerLinkLabel: "Перейти в центр RIDE"
+    },
+    {
+        key: "edtl",
+        label: "Инженерия требований и EDTL",
+        title: "Инженерия требований и EDTL",
+        description: "Формализуйте требования и связывайте их с исполняемыми спецификациями",
+        centerLinkLabel: "Перейти в центр инженерии требований"
+    },
+    {
+        key: "distributed",
+        label: "Распределенные микроконтроллерные системы",
+        title: "Распределенные микроконтроллерные системы",
+        description: "Проектируйте устойчивые многоконтурные системы для производственных задач",
+        centerLinkLabel: "Перейти в центр распределенных систем"
+    },
+    {
+        key: "analysis",
+        label: "Инструменты статического анализа",
+        title: "Инструменты статического анализа",
+        description: "Анализируйте код и модели заранее, чтобы снижать риски на этапе разработки",
+        centerLinkLabel: "Перейти в центр статического анализа"
+    }
 ];
 
 function getSearchResultTitle(item: SearchResultItem): string {
@@ -69,11 +110,14 @@ function getSearchResultTarget(item: SearchResultItem): string {
 export function Navbar() {
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const [isSearchOpen, setIsSearchOpen] = useState(false);
+    const [isProjectsPanelOpen, setIsProjectsPanelOpen] = useState(false);
+    const [activeProjectsCategoryIndex, setActiveProjectsCategoryIndex] = useState(0);
     const [searchQuery, setSearchQuery] = useState("");
     const [searchState, setSearchState] = useState<SearchState>("idle");
     const [searchResults, setSearchResults] = useState<SearchResultItem[]>([]);
     const [searchError, setSearchError] = useState("");
     const menuRef = useRef<HTMLDivElement | null>(null);
+    const projectsPanelRef = useRef<HTMLDivElement | null>(null);
     const inputRef = useRef<HTMLInputElement | null>(null);
     const requestIdRef = useRef(0);
     const location = useLocation();
@@ -82,6 +126,7 @@ export function Navbar() {
     useEffect(() => {
         setIsMenuOpen(false);
         setIsSearchOpen(false);
+        setIsProjectsPanelOpen(false);
     }, [location.pathname]);
 
     useEffect(() => {
@@ -90,8 +135,13 @@ export function Navbar() {
                 return;
             }
 
-            if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+            const clickedNode = event.target as Node;
+            const clickedOutsideMenu = !menuRef.current || !menuRef.current.contains(clickedNode);
+            const clickedOutsideProjectsPanel = !projectsPanelRef.current || !projectsPanelRef.current.contains(clickedNode);
+
+            if (clickedOutsideMenu && clickedOutsideProjectsPanel) {
                 setIsMenuOpen(false);
+                setIsProjectsPanelOpen(false);
             }
         };
 
@@ -99,11 +149,13 @@ export function Navbar() {
             if (event.key === "Escape") {
                 setIsMenuOpen(false);
                 setIsSearchOpen(false);
+                setIsProjectsPanelOpen(false);
             }
         };
 
         const handleOpenSearch = () => {
             setIsMenuOpen(false);
+            setIsProjectsPanelOpen(false);
             setIsSearchOpen(true);
         };
 
@@ -119,6 +171,29 @@ export function Navbar() {
     }, [isMenuOpen]);
 
     useEffect(() => {
+        if (typeof window === "undefined") {
+            return;
+        }
+
+        const mediaQuery = window.matchMedia("(max-width: 1235px)");
+        const handleChange = (event: MediaQueryListEvent) => {
+            if (event.matches) {
+                setIsProjectsPanelOpen(false);
+            }
+        };
+
+        if (mediaQuery.matches) {
+            setIsProjectsPanelOpen(false);
+        }
+
+        mediaQuery.addEventListener("change", handleChange);
+
+        return () => {
+            mediaQuery.removeEventListener("change", handleChange);
+        };
+    }, []);
+
+    useEffect(() => {
         if (!isSearchOpen) {
             return;
         }
@@ -131,6 +206,19 @@ export function Navbar() {
             document.body.style.overflow = previousOverflow;
         };
     }, [isSearchOpen]);
+
+    useEffect(() => {
+        if (!isProjectsPanelOpen) {
+            return;
+        }
+
+        const previousOverflow = document.body.style.overflow;
+        document.body.style.overflow = "hidden";
+
+        return () => {
+            document.body.style.overflow = previousOverflow;
+        };
+    }, [isProjectsPanelOpen]);
 
     useEffect(() => {
         if (!isMenuOpen || typeof window === "undefined" || !window.matchMedia("(max-width: 720px)").matches) {
@@ -220,11 +308,18 @@ export function Navbar() {
 
     const toggleSearch = () => {
         setIsMenuOpen(false);
+        setIsProjectsPanelOpen(false);
         setIsSearchOpen((isOpen) => !isOpen);
     };
 
+    const activeProjectsCategory = projectsCategories[activeProjectsCategoryIndex] ?? projectsCategories[0];
+
+    const closeProjectsPanel = () => {
+        setIsProjectsPanelOpen(false);
+    };
+
     return (
-        <header className={`site-header${isSearchOpen ? " site-header-search-open" : ""}`}>
+        <header className={`site-header${isSearchOpen ? " site-header-search-open" : ""}${isProjectsPanelOpen ? " site-header-projects-open" : ""}`}>
             <div className="site-header-stack">
                 <div className="site-header-top">
                     <div className="site-header-top-links">
@@ -244,13 +339,29 @@ export function Navbar() {
                         <div className="site-navigation-shell" ref={menuRef}>
                             <nav aria-label="Главная навигация" className="site-navigation">
                                 {NavigationTree.map(([path, title]) => (
-                                    <NavLink
-                                        className={({isActive}) => `site-navigation-link${isActive ? " site-navigation-link-active" : ""}`}
-                                        key={path}
-                                        to={path}
-                                    >
-                                        {title}
-                                    </NavLink>
+                                    path === "/projects" ? (
+                                        <button
+                                            aria-expanded={isProjectsPanelOpen}
+                                            className={`site-navigation-link${isProjectsPanelOpen || location.pathname === path ? " site-navigation-link-active" : ""}`}
+                                            key={path}
+                                            onClick={() => {
+                                                setIsSearchOpen(false);
+                                                setIsMenuOpen(false);
+                                                setIsProjectsPanelOpen((isOpen) => !isOpen);
+                                            }}
+                                            type="button"
+                                        >
+                                            {title}
+                                        </button>
+                                    ) : (
+                                        <NavLink
+                                            className={({isActive}) => `site-navigation-link${isActive ? " site-navigation-link-active" : ""}`}
+                                            key={path}
+                                            to={path}
+                                        >
+                                            {title}
+                                        </NavLink>
+                                    )
                                 ))}
                             </nav>
 
@@ -259,6 +370,7 @@ export function Navbar() {
                                 className={`site-navigation-link site-navigation-menu-button${isMenuOpen ? " site-navigation-link-active" : ""}`}
                                 onClick={() => {
                                     setIsSearchOpen(false);
+                                    setIsProjectsPanelOpen(false);
                                     setIsMenuOpen((isOpen) => !isOpen);
                                 }}
                                 type="button"
@@ -319,6 +431,79 @@ export function Navbar() {
                     </div>
 
                 </div>
+
+                {isProjectsPanelOpen && (
+                    <div className="site-projects-panel" ref={projectsPanelRef} role="dialog" aria-label="Панель проектов">
+                        <button
+                            aria-label="Закрыть панель проектов"
+                            className="site-projects-panel-close site-search-x-button"
+                            onClick={closeProjectsPanel}
+                            type="button"
+                        />
+
+                        <div className="site-projects-panel-layout">
+                            <aside className="site-projects-panel-sidebar" aria-label="Разделы проектов">
+                                {projectsCategories.map((category, index) => (
+                                    <button
+                                        className={`site-projects-category${index === activeProjectsCategoryIndex ? " site-projects-category-active" : ""}`}
+                                        key={category.key}
+                                        onClick={() => setActiveProjectsCategoryIndex(index)}
+                                        type="button"
+                                    >
+                                        {category.label}
+                                    </button>
+                                ))}
+                            </aside>
+
+                            <section className="site-projects-panel-content">
+                                <h3>{activeProjectsCategory.title}</h3>
+                                <p>{activeProjectsCategory.description}</p>
+                                <Link className="site-projects-panel-center-link" onClick={closeProjectsPanel} to="/projects">
+                                    {activeProjectsCategory.centerLinkLabel}
+                                </Link>
+
+                                <div className="site-projects-panel-top-row">
+                                    <Link className="site-projects-feature-card" onClick={closeProjectsPanel} to="/projects">
+                                        <div className="site-projects-feature-copy">
+                                            <strong>Reflex</strong>
+                                            <span>Язык для разработки ПО микроконтроллеров во встраиваемых системах с использованием методик процесс-ориентированного программирования</span>
+                                        </div>
+                                        <img alt="" aria-hidden="true" src={arrowRightAltIcon}/>
+                                    </Link>
+
+                                    <article className="site-projects-plain-card">
+                                        <strong>poST</strong>
+                                        <span>Процесс-ориентированное расширение языка Structured Text (ST) для программирования алгоритмически сложных управляющих программ для ПЛК</span>
+                                    </article>
+
+                                    <article className="site-projects-plain-card">
+                                        <strong>IndustrialC</strong>
+                                        <span>Специализированный процесс-ориентированный язык программирования для задач промышленной автоматизации и систем реального времени с синтаксисом, похожим на Cи</span>
+                                    </article>
+                                </div>
+
+                                <div className="site-projects-panel-bottom-row">
+                                    <Link className="site-projects-news-card" onClick={closeProjectsPanel} to="/projects">
+                                        <img alt="" src={caseOneImage}/>
+                                        <div className="site-projects-news-copy">
+                                            <strong>Что нового?</strong>
+                                            <span>Изучите новые возможности и передовые технологии</span>
+                                        </div>
+                                        <img alt="" aria-hidden="true" src={arrowRightAltIcon}/>
+                                    </Link>
+
+                                    <article className="site-projects-success-card">
+                                        <img alt="" src={caseTwoImage}/>
+                                        <div className="site-projects-success-copy">
+                                            <strong>Истории успеха наших пользователей</strong>
+                                            <span>Узнайте, как технологии Poprog ускоряют переход предприятий в Индустрию 4.0</span>
+                                        </div>
+                                    </article>
+                                </div>
+                            </section>
+                        </div>
+                    </div>
+                )}
 
                 {isMenuOpen && (
                     <div className="site-header-main-menu">
@@ -413,6 +598,15 @@ export function Navbar() {
 
             {isSearchOpen && (
                 <button aria-label="Закрыть поиск" className="site-search-backdrop" onClick={() => setIsSearchOpen(false)} type="button"/>
+            )}
+
+            {isProjectsPanelOpen && (
+                <button
+                    aria-label="Закрыть панель проектов"
+                    className="site-projects-backdrop"
+                    onClick={closeProjectsPanel}
+                    type="button"
+                />
             )}
         </header>
     );
