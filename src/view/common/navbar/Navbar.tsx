@@ -18,7 +18,7 @@ const topLinks = [
 ];
 
 function getSearchResultTitle(item: SearchResultItem): string {
-    return item.theme ?? item.title ?? "Без названия";
+    return item.theme;
 }
 
 function getSearchResultDescription(item: SearchResultItem): string {
@@ -205,7 +205,7 @@ export function Navbar() {
                 {searchResults.map((item, index) => (
                     <Link
                         className="site-search-result-card"
-                        key={`${item.type}-${item.id ?? item.hash ?? index}`}
+                        key={`${item.type}-${item.id}-${item.sourceId ?? index}`}
                         onClick={() => setIsSearchOpen(false)}
                         to={getSearchResultTarget(item)}
                     >
