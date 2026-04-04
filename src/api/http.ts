@@ -27,3 +27,22 @@ export async function getJson<T>(path: string): Promise<T> {
 
     return response.json() as Promise<T>;
 }
+
+export async function postJson<TResponse, TRequest>(path: string, body: TRequest): Promise<TResponse> {
+    const response = await fetch(buildUrl(path), {
+        method: "POST",
+        headers: {
+            Accept: "application/json",
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify(body)
+    });
+
+    if (!response.ok) {
+        const errorText = await response.text();
+        const details = errorText ? `: ${errorText}` : "";
+        throw new Error(`Request failed with status ${response.status}${details}`);
+    }
+
+    return response.json() as Promise<TResponse>;
+}

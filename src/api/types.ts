@@ -23,21 +23,61 @@ export interface WorksByProjectTypeDto {
 }
 
 export interface SearchResultItem {
-    type: string
-    id?: number | string
-    sourceId?: number
-    authors?: string
-    theme?: string
-    published?: string
-    link?: string
-    title?: string
-    hash?: string
-    groupTitle?: string | null
-    groupHash?: string | null
+    id: string
+    type: "publication" | "student-work"
+    sourceId: number
+    groupTitle: string
+    groupHash: string | null
+    authors: string
+    theme: string
+    published: string
+    link: string | null
 }
 
 export interface SearchResponse {
-    query?: string
-    total?: number
+    query: string
+    total: number
     items: SearchResultItem[]
+}
+
+export interface ProblemDetail {
+    type?: string
+    title?: string
+    status?: number
+    detail?: string
+    instance?: string
+}
+
+export type AiAssistantChatRole = "system" | "user" | "assistant";
+
+export interface AiAssistantChatMessageRequest {
+    role: AiAssistantChatRole
+    content: string
+}
+
+export interface AiAssistantChatRequest {
+    chatId: string | null
+    messages: AiAssistantChatMessageRequest[]
+}
+
+export interface AiAssistantChatResponse {
+    chatId: string
+    content: string
+    model: string
+    finishReason: string | null
+    promptTokens: number | null
+    completionTokens: number | null
+    totalTokens: number | null
+}
+
+export interface ChatHistoryMessageResponse {
+    id: number
+    role: AiAssistantChatRole
+    content: string
+    createdAt: string
+}
+
+export interface ChatHistoryResponse {
+    chatId: string
+    messages: ChatHistoryMessageResponse[]
 }

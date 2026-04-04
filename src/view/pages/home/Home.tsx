@@ -1,4 +1,5 @@
 import {useMemo, useState} from "react";
+import {Link} from "react-router-dom";
 import BodyView from "../BodyView";
 import "../../../styles/pages/Home.scss";
 import heroBackground from "../../../assets/home/hero/hero-bg.png";
@@ -71,6 +72,9 @@ export function Home() {
                     <div className="home-hero-content">
                         <h1>Процесс-ориентированное программирование -</h1>
                         <p>эффективная технология разработки управляющих программ в виде набора взаимодействующих процессов</p>
+                        <Link className="home-hero-cta" to="/chat">
+                            Обсудить задачу в ИИ-чате
+                        </Link>
                     </div>
                 </section>
 

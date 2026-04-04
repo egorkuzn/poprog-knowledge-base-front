@@ -1,5 +1,12 @@
-import {getJson} from "./http";
-import type {PublicationsByDateDto, SearchResponse, WorksByProjectTypeDto} from "./types";
+import {getJson, postJson} from "./http";
+import type {
+    AiAssistantChatRequest,
+    AiAssistantChatResponse,
+    ChatHistoryResponse,
+    PublicationsByDateDto,
+    SearchResponse,
+    WorksByProjectTypeDto
+} from "./types";
 
 export function getGroupedPublications(): Promise<PublicationsByDateDto[]> {
     return getJson<PublicationsByDateDto[]>("/api/publications/grouped");
@@ -15,10 +22,14 @@ export function searchKnowledgeBase(query: string, limit = 20): Promise<SearchRe
         limit: limit.toString()
     });
 
-    return getJson<SearchResponse | {items?: SearchResponse["items"]} | {results?: SearchResponse["items"]} | SearchResponse["items"]>(`/api/search?${params.toString()}`)
+    return getJson<SearchResponse | {query?: string; total?: number; items?: SearchResponse["items"]} | {results?: SearchResponse["items"]} | SearchResponse["items"]>(`/api/search?${params.toString()}`)
         .then((response) => {
             if (Array.isArray(response)) {
-                return {items: response};
+                return {
+                    query,
+                    total: response.length,
+                    items: response
+                };
             }
 
             const queryValue = "query" in response && typeof response.query === "string" ? response.query : query;
@@ -31,8 +42,16 @@ export function searchKnowledgeBase(query: string, limit = 20): Promise<SearchRe
 
             return {
                 query: queryValue,
-                total: totalValue,
+                total: typeof totalValue === "number" ? totalValue : itemsValue.length,
                 items: itemsValue
             };
         });
+}
+
+export function assistantChat(request: AiAssistantChatRequest): Promise<AiAssistantChatResponse> {
+    return postJson<AiAssistantChatResponse, AiAssistantChatRequest>("/api/assistant/chat", request);
+}
+
+export function getAssistantChatHistory(chatId: string): Promise<ChatHistoryResponse> {
+    return getJson<ChatHistoryResponse>(`/api/assistant/chats/${chatId}/messages`);
 }
