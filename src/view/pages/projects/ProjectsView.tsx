@@ -1,5 +1,4 @@
 import BodyView from "../BodyView";
-import {ProjectsViewBlock} from "./ProjectsViewBlock";
 
 export function ProjectsView() {
     return (BodyView(page()))
@@ -7,12 +6,10 @@ export function ProjectsView() {
 
 function page() {
     return (
-        <main>
-            <div className="projects">
+        <main className="projects-page">
+            <section className="projects-page-content">
                 <h1>Проекты</h1>
-                <ProjectsViewBlock/>
-            </div>
+            </section>
         </main>
     )
 }
-

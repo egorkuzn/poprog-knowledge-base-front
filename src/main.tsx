@@ -3,12 +3,12 @@ import {} from "./index.css";
 import ReactDOM from "react-dom/client";
 import { RouterProvider } from "react-router-dom";
 import {WorksView} from "./view/pages/works/WorksView";
-import {ProjectsView} from "./view/pages/projects/ProjectsView";
 import {VideoView} from "./view/pages/video/VideoView";
 import {PublicationsView} from "./view/pages/publications/PublicationsView";
 import {DocsView} from "./view/pages/docs/DocsView";
 import {Home} from "./view/pages/home/Home";
 import {ChatView} from "./view/pages/chat/ChatView";
+import {ProjectItemView} from "./view/pages/projects/ProjectItemView";
 import { createBrowserRouter} from "react-router-dom";
 
 const router = createBrowserRouter([
@@ -30,7 +30,11 @@ const router = createBrowserRouter([
     },
     {
         path: "/projects",
-        element: <ProjectsView/>
+        element: <Home/>
+    },
+    {
+        path: "/projects/:itemSlug",
+        element: <ProjectItemView/>
     },
     {
         path: "/publications",
