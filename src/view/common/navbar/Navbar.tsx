@@ -1,6 +1,7 @@
 import {useEffect, useMemo, useRef, useState} from "react";
 import {Link, NavLink, useLocation} from "react-router-dom";
 import {searchKnowledgeBase} from "../../../api/knowledgeBaseApi";
+import {apiBaseUrl} from "../../../api/config";
 import type {SearchResultItem} from "../../../api/types";
 import {NavigationTree} from "../../../data/navbar/NavigationTree";
 import searchIcon from "../../../assets/home/icons/search.svg";
@@ -122,7 +123,7 @@ function getSearchResultTypeLabel(item: SearchResultItem): string {
     return "Материал";
 }
 
-function getSearchResultTarget(item: SearchResultItem): string {
+function getSearchResultFallbackTarget(item: SearchResultItem): string {
     const normalizedType = item.type.toLowerCase();
 
     if (normalizedType.includes("publication")) {
@@ -144,6 +145,52 @@ function getSearchResultTarget(item: SearchResultItem): string {
     return "/home";
 }
 
+function getApiHostFromBaseUrl(): string {
+    if (apiBaseUrl.length === 0) {
+        return "http://localhost:8080";
+    }
+
+    if (apiBaseUrl.startsWith("http://") || apiBaseUrl.startsWith("https://")) {
+        try {
+            return new URL(apiBaseUrl).origin;
+        } catch {
+            return apiBaseUrl;
+        }
+    }
+
+    return apiBaseUrl;
+}
+
+function resolveSearchResultNavigation(item: SearchResultItem): { externalUrl?: string, internalPath: string } {
+    const rawLink = item.link?.trim();
+    const fallbackPath = getSearchResultFallbackTarget(item);
+
+    if (!rawLink) {
+        return {internalPath: fallbackPath};
+    }
+
+    const normalizedAbsoluteCandidate = rawLink.replace(/^\/+/, "");
+
+    if (/^https?:\/\//i.test(rawLink)) {
+        return {externalUrl: rawLink, internalPath: fallbackPath};
+    }
+
+    if (/^https?:\/\//i.test(normalizedAbsoluteCandidate)) {
+        return {externalUrl: normalizedAbsoluteCandidate, internalPath: fallbackPath};
+    }
+
+    if (rawLink.startsWith("//")) {
+        return {externalUrl: `https:${rawLink}`, internalPath: fallbackPath};
+    }
+
+    const apiHost = getApiHostFromBaseUrl().replace(/\/+$/, "");
+    const normalizedLink = rawLink.replace(/^\/+/, "");
+    return {
+        externalUrl: `${apiHost}/${normalizedLink}`,
+        internalPath: fallbackPath
+    };
+}
+
 export function Navbar() {
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const [isSearchOpen, setIsSearchOpen] = useState(false);
@@ -155,6 +202,7 @@ export function Navbar() {
     const [searchState, setSearchState] = useState<SearchState>("idle");
     const [searchResults, setSearchResults] = useState<SearchResultItem[]>([]);
     const [searchError, setSearchError] = useState("");
+    const [externalNavigationUrl, setExternalNavigationUrl] = useState<string | null>(null);
     const menuRef = useRef<HTMLDivElement | null>(null);
     const projectsPanelRef = useRef<HTMLDivElement | null>(null);
     const inputRef = useRef<HTMLInputElement | null>(null);
@@ -196,6 +244,7 @@ export function Navbar() {
                 setIsMenuOpen(false);
                 setIsSearchOpen(false);
                 setIsProjectsPanelOpen(false);
+                setExternalNavigationUrl(null);
             }
         };
 
@@ -337,16 +386,19 @@ export function Navbar() {
         return (
             <div className="site-search-results-list">
                 {searchResults.map((item, index) => (
-                    <Link
+                    <button
                         className="site-search-result-card"
                         key={`${item.type}-${item.id}-${item.sourceId ?? index}`}
-                        onClick={() => setIsSearchOpen(false)}
-                        to={getSearchResultTarget(item)}
+                        onClick={() => {
+                            setIsSearchOpen(false);
+                            void openSearchResultInNewTab(item);
+                        }}
+                        type="button"
                     >
                         <span className="site-search-result-type">{getSearchResultTypeLabel(item)}</span>
                         <strong>{getSearchResultTitle(item)}</strong>
                         <span>{getSearchResultDescription(item)}</span>
-                    </Link>
+                    </button>
                 ))}
             </div>
         );
@@ -364,6 +416,115 @@ export function Navbar() {
 
     const closeProjectsPanel = () => {
         setIsProjectsPanelOpen(false);
+    };
+
+    const isApiHostFileUrl = (targetUrl: string): boolean => {
+        try {
+            const parsedTargetUrl = new URL(targetUrl);
+            const parsedApiHostUrl = new URL(getApiHostFromBaseUrl());
+            const isApiHost = parsedTargetUrl.origin === parsedApiHostUrl.origin;
+            const isFilePath = /\/[^/?#]+\.[^/?#]+$/.test(parsedTargetUrl.pathname);
+            return isApiHost && isFilePath;
+        } catch {
+            return false;
+        }
+    };
+
+    const openUpdaterTab = (): Window | null => {
+        const tab = window.open("", "_blank");
+
+        if (!tab) {
+            return null;
+        }
+
+        tab.document.write(`
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Проверка ресурса</title>
+  <style>
+    body { margin: 0; min-height: 100vh; display: grid; place-items: center; font-family: "Tilda Sans VF", sans-serif; background: #f7f7f8; color: #181818; }
+    .wrap { display: grid; justify-items: center; gap: 14px; padding: 24px; text-align: center; }
+    .spinner { width: 42px; height: 42px; border: 3px solid #d6d6da; border-top-color: #181818; border-radius: 50%; animation: spin 0.85s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .caption { font-size: 16px; line-height: 1.35; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="spinner" aria-hidden="true"></div>
+    <div class="caption">Проверяем доступность ресурса...</div>
+  </div>
+</body>
+</html>
+        `);
+        tab.document.close();
+        return tab;
+    };
+
+    const openValidatedUrlInNewTab = async (targetUrl: string, openedTab?: Window | null) => {
+        const notFoundUrl = `${window.location.origin}/not-found`;
+        const openUrl = (url: string) => {
+            if (openedTab) {
+                openedTab.location.replace(url);
+                return;
+            }
+
+            window.open(url, "_blank");
+        };
+
+        try {
+            const headResponse = await fetch(targetUrl, {method: "HEAD"});
+
+            if (headResponse.status === 404) {
+                openUrl(notFoundUrl);
+                return;
+            }
+
+            if (headResponse.status === 405) {
+                try {
+                    const getResponse = await fetch(targetUrl, {method: "GET"});
+
+                    if (getResponse.status === 404) {
+                        openUrl(notFoundUrl);
+                        return;
+                    }
+                } catch {
+                    // CORS/opaque response on GET: cannot verify status, allow navigation.
+                }
+            }
+
+            if (!headResponse.ok && headResponse.type !== "opaque" && headResponse.status !== 0) {
+                // For non-404 errors with known status we still allow navigation,
+                // because many resources protect HEAD/GET but are accessible in a browser tab.
+                openUrl(targetUrl);
+                return;
+            }
+
+            openUrl(targetUrl);
+        } catch {
+            // CORS/network restrictions can block status checks from frontend.
+            // In that case, open the resource and let the browser handle it.
+            openUrl(targetUrl);
+        }
+    };
+
+    const openSearchResultInNewTab = async (item: SearchResultItem) => {
+        const navigationTarget = resolveSearchResultNavigation(item);
+
+        if (!navigationTarget.externalUrl) {
+            window.open(`${window.location.origin}${navigationTarget.internalPath}`, "_blank");
+            return;
+        }
+
+        if (!isApiHostFileUrl(navigationTarget.externalUrl)) {
+            setExternalNavigationUrl(navigationTarget.externalUrl);
+            return;
+        }
+
+        await openValidatedUrlInNewTab(navigationTarget.externalUrl);
     };
 
     return (
@@ -744,6 +905,45 @@ export function Navbar() {
                     onClick={closeProjectsPanel}
                     type="button"
                 />
+            )}
+
+            {externalNavigationUrl && (
+                <>
+                    <button
+                        aria-label="Закрыть предупреждение о внешнем ресурсе"
+                        className="site-external-resource-backdrop"
+                        onClick={() => setExternalNavigationUrl(null)}
+                        type="button"
+                    />
+                    <div aria-label="Предупреждение о внешнем ресурсе" className="site-external-resource-modal" role="dialog">
+                        <h3>Вы переходите на внешний ресурс</h3>
+                        <p>Проверьте адрес перед переходом:</p>
+                        <p className="site-external-resource-url">{externalNavigationUrl}</p>
+                        <div className="site-external-resource-actions">
+                            <button
+                                className="site-external-resource-cancel"
+                                onClick={() => setExternalNavigationUrl(null)}
+                                type="button"
+                            >
+                                Отмена
+                            </button>
+                            <button
+                                className="site-external-resource-confirm"
+                                onClick={() => {
+                                    const urlToOpen = externalNavigationUrl;
+                                    setExternalNavigationUrl(null);
+                                    if (urlToOpen) {
+                                        const updaterTab = openUpdaterTab();
+                                        void openValidatedUrlInNewTab(urlToOpen, updaterTab);
+                                    }
+                                }}
+                                type="button"
+                            >
+                                Продолжить
+                            </button>
+                        </div>
+                    </div>
+                </>
             )}
         </header>
     );
