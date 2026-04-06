@@ -9,6 +9,7 @@ import {DocsView} from "./view/pages/docs/DocsView";
 import {Home} from "./view/pages/home/Home";
 import {ChatView} from "./view/pages/chat/ChatView";
 import {ProjectItemView} from "./view/pages/projects/ProjectItemView";
+import {NotFoundView} from "./view/pages/not-found/NotFoundView";
 import { createBrowserRouter} from "react-router-dom";
 
 const router = createBrowserRouter([
@@ -47,6 +48,10 @@ const router = createBrowserRouter([
     {
         path: "/chat",
         element: <ChatView/>
+    },
+    {
+        path: "/not-found",
+        element: <NotFoundView/>
     },
     {
         path: "*",
