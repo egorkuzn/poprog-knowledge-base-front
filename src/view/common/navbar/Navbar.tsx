@@ -3,6 +3,7 @@ import {Link, NavLink, useLocation} from "react-router-dom";
 import {searchKnowledgeBase} from "../../../api/knowledgeBaseApi";
 import {apiBaseUrl} from "../../../api/config";
 import type {SearchResultItem} from "../../../api/types";
+import {openExternalUrlInNewTabWithCheck} from "../../../utils/externalNavigation";
 import {NavigationTree} from "../../../data/navbar/NavigationTree";
 import searchIcon from "../../../assets/home/icons/search.svg";
 import accountIcon from "../../../assets/home/icons/account.svg";
@@ -418,99 +419,6 @@ export function Navbar() {
         setIsProjectsPanelOpen(false);
     };
 
-    const isApiHostFileUrl = (targetUrl: string): boolean => {
-        try {
-            const parsedTargetUrl = new URL(targetUrl);
-            const parsedApiHostUrl = new URL(getApiHostFromBaseUrl());
-            const isApiHost = parsedTargetUrl.origin === parsedApiHostUrl.origin;
-            const isFilePath = /\/[^/?#]+\.[^/?#]+$/.test(parsedTargetUrl.pathname);
-            return isApiHost && isFilePath;
-        } catch {
-            return false;
-        }
-    };
-
-    const openUpdaterTab = (): Window | null => {
-        const tab = window.open("", "_blank");
-
-        if (!tab) {
-            return null;
-        }
-
-        tab.document.write(`
-<!doctype html>
-<html lang="ru">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Проверка ресурса</title>
-  <style>
-    body { margin: 0; min-height: 100vh; display: grid; place-items: center; font-family: "Tilda Sans VF", sans-serif; background: #f7f7f8; color: #181818; }
-    .wrap { display: grid; justify-items: center; gap: 14px; padding: 24px; text-align: center; }
-    .spinner { width: 42px; height: 42px; border: 3px solid #d6d6da; border-top-color: #181818; border-radius: 50%; animation: spin 0.85s linear infinite; }
-    @keyframes spin { to { transform: rotate(360deg); } }
-    .caption { font-size: 16px; line-height: 1.35; }
-  </style>
-</head>
-<body>
-  <div class="wrap">
-    <div class="spinner" aria-hidden="true"></div>
-    <div class="caption">Проверяем доступность ресурса...</div>
-  </div>
-</body>
-</html>
-        `);
-        tab.document.close();
-        return tab;
-    };
-
-    const openValidatedUrlInNewTab = async (targetUrl: string, openedTab?: Window | null) => {
-        const notFoundUrl = `${window.location.origin}/not-found`;
-        const openUrl = (url: string) => {
-            if (openedTab) {
-                openedTab.location.replace(url);
-                return;
-            }
-
-            window.open(url, "_blank");
-        };
-
-        try {
-            const headResponse = await fetch(targetUrl, {method: "HEAD"});
-
-            if (headResponse.status === 404) {
-                openUrl(notFoundUrl);
-                return;
-            }
-
-            if (headResponse.status === 405) {
-                try {
-                    const getResponse = await fetch(targetUrl, {method: "GET"});
-
-                    if (getResponse.status === 404) {
-                        openUrl(notFoundUrl);
-                        return;
-                    }
-                } catch {
-                    // CORS/opaque response on GET: cannot verify status, allow navigation.
-                }
-            }
-
-            if (!headResponse.ok && headResponse.type !== "opaque" && headResponse.status !== 0) {
-                // For non-404 errors with known status we still allow navigation,
-                // because many resources protect HEAD/GET but are accessible in a browser tab.
-                openUrl(targetUrl);
-                return;
-            }
-
-            openUrl(targetUrl);
-        } catch {
-            // CORS/network restrictions can block status checks from frontend.
-            // In that case, open the resource and let the browser handle it.
-            openUrl(targetUrl);
-        }
-    };
-
     const openSearchResultInNewTab = async (item: SearchResultItem) => {
         const navigationTarget = resolveSearchResultNavigation(item);
 
@@ -518,13 +426,7 @@ export function Navbar() {
             window.open(`${window.location.origin}${navigationTarget.internalPath}`, "_blank");
             return;
         }
-
-        if (!isApiHostFileUrl(navigationTarget.externalUrl)) {
-            setExternalNavigationUrl(navigationTarget.externalUrl);
-            return;
-        }
-
-        await openValidatedUrlInNewTab(navigationTarget.externalUrl);
+        setExternalNavigationUrl(navigationTarget.externalUrl);
     };
 
     return (
@@ -933,8 +835,7 @@ export function Navbar() {
                                     const urlToOpen = externalNavigationUrl;
                                     setExternalNavigationUrl(null);
                                     if (urlToOpen) {
-                                        const updaterTab = openUpdaterTab();
-                                        void openValidatedUrlInNewTab(urlToOpen, updaterTab);
+                                        void openExternalUrlInNewTabWithCheck(urlToOpen);
                                     }
                                 }}
                                 type="button"

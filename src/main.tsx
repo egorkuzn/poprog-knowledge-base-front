@@ -10,6 +10,7 @@ import {Home} from "./view/pages/home/Home";
 import {ChatView} from "./view/pages/chat/ChatView";
 import {ProjectItemView} from "./view/pages/projects/ProjectItemView";
 import {NotFoundView} from "./view/pages/not-found/NotFoundView";
+import {ExternalFallbackView} from "./view/pages/not-found/ExternalFallbackView";
 import { createBrowserRouter} from "react-router-dom";
 
 const router = createBrowserRouter([
@@ -55,10 +56,7 @@ const router = createBrowserRouter([
     },
     {
         path: "*",
-        Component: () => {
-            window.location.href = "https://www.iae.nsk.su/ru/laboratory-sites/lab-19"
-            return null
-        }
+        element: <ExternalFallbackView/>
     }
 ]);
 
