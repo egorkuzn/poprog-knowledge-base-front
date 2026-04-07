@@ -27,9 +27,12 @@ interface OpenExternalUrlOptions {
     openedTab?: Window | null
 }
 
-interface RequestExternalNavigationOptions extends OpenExternalUrlOptions {
-    confirmMessage?: string
+export interface ExternalNavigationRequestDetail {
+    targetUrl: string
+    notFoundPath?: string
 }
+
+export const EXTERNAL_NAVIGATION_REQUEST_EVENT = "site-external-navigation:request";
 
 function openUpdaterTab(): Window | null {
     const tab = window.open("", "_blank");
@@ -106,13 +109,13 @@ export async function openExternalUrlInNewTabWithCheck(targetUrl: string, option
     openUrlInTab(notFound ? notFoundUrl : resolvedTarget, openedTab);
 }
 
-export async function requestExternalNavigation(targetUrl: string, options: RequestExternalNavigationOptions = {}): Promise<void> {
+export async function requestExternalNavigation(targetUrl: string, options: OpenExternalUrlOptions = {}): Promise<void> {
     const resolvedTarget = resolveTargetUrl(targetUrl);
-    const confirmed = window.confirm(options.confirmMessage ?? `Вы переходите на внешний ресурс:\n${resolvedTarget}\n\nПродолжить?`);
-
-    if (!confirmed) {
-        return;
-    }
-
-    await openExternalUrlInNewTabWithCheck(resolvedTarget, options);
+    const event = new CustomEvent<ExternalNavigationRequestDetail>(EXTERNAL_NAVIGATION_REQUEST_EVENT, {
+        detail: {
+            targetUrl: resolvedTarget,
+            notFoundPath: options.notFoundPath
+        }
+    });
+    window.dispatchEvent(event);
 }

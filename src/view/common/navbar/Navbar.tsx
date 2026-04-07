@@ -3,7 +3,11 @@ import {Link, NavLink, useLocation} from "react-router-dom";
 import {searchKnowledgeBase} from "../../../api/knowledgeBaseApi";
 import {apiBaseUrl} from "../../../api/config";
 import type {SearchResultItem} from "../../../api/types";
-import {openExternalUrlInNewTabWithCheck} from "../../../utils/externalNavigation";
+import {
+    EXTERNAL_NAVIGATION_REQUEST_EVENT,
+    openExternalUrlInNewTabWithCheck,
+    type ExternalNavigationRequestDetail
+} from "../../../utils/externalNavigation";
 import {NavigationTree} from "../../../data/navbar/NavigationTree";
 import searchIcon from "../../../assets/home/icons/search.svg";
 import accountIcon from "../../../assets/home/icons/account.svg";
@@ -203,7 +207,7 @@ export function Navbar() {
     const [searchState, setSearchState] = useState<SearchState>("idle");
     const [searchResults, setSearchResults] = useState<SearchResultItem[]>([]);
     const [searchError, setSearchError] = useState("");
-    const [externalNavigationUrl, setExternalNavigationUrl] = useState<string | null>(null);
+    const [externalNavigationRequest, setExternalNavigationRequest] = useState<ExternalNavigationRequestDetail | null>(null);
     const menuRef = useRef<HTMLDivElement | null>(null);
     const projectsPanelRef = useRef<HTMLDivElement | null>(null);
     const inputRef = useRef<HTMLInputElement | null>(null);
@@ -245,7 +249,7 @@ export function Navbar() {
                 setIsMenuOpen(false);
                 setIsSearchOpen(false);
                 setIsProjectsPanelOpen(false);
-                setExternalNavigationUrl(null);
+                setExternalNavigationRequest(null);
             }
         };
 
@@ -255,14 +259,33 @@ export function Navbar() {
             setIsSearchOpen(true);
         };
 
+        const handleExternalNavigationRequest = (event: Event) => {
+            const customEvent = event as CustomEvent<ExternalNavigationRequestDetail>;
+            const targetUrl = customEvent.detail?.targetUrl;
+
+            if (!targetUrl) {
+                return;
+            }
+
+            setIsMenuOpen(false);
+            setIsSearchOpen(false);
+            setIsProjectsPanelOpen(false);
+            setExternalNavigationRequest({
+                targetUrl,
+                notFoundPath: customEvent.detail?.notFoundPath
+            });
+        };
+
         document.addEventListener("mousedown", handleOutsideClick);
         document.addEventListener("keydown", handleEscape);
         window.addEventListener("site-search:open", handleOpenSearch);
+        window.addEventListener(EXTERNAL_NAVIGATION_REQUEST_EVENT, handleExternalNavigationRequest as EventListener);
 
         return () => {
             document.removeEventListener("mousedown", handleOutsideClick);
             document.removeEventListener("keydown", handleEscape);
             window.removeEventListener("site-search:open", handleOpenSearch);
+            window.removeEventListener(EXTERNAL_NAVIGATION_REQUEST_EVENT, handleExternalNavigationRequest as EventListener);
         };
     }, [isMenuOpen]);
 
@@ -426,7 +449,9 @@ export function Navbar() {
             window.open(`${window.location.origin}${navigationTarget.internalPath}`, "_blank");
             return;
         }
-        setExternalNavigationUrl(navigationTarget.externalUrl);
+        setExternalNavigationRequest({
+            targetUrl: navigationTarget.externalUrl
+        });
     };
 
     return (
@@ -809,22 +834,22 @@ export function Navbar() {
                 />
             )}
 
-            {externalNavigationUrl && (
+            {externalNavigationRequest && (
                 <>
                     <button
                         aria-label="Закрыть предупреждение о внешнем ресурсе"
                         className="site-external-resource-backdrop"
-                        onClick={() => setExternalNavigationUrl(null)}
+                        onClick={() => setExternalNavigationRequest(null)}
                         type="button"
                     />
                     <div aria-label="Предупреждение о внешнем ресурсе" className="site-external-resource-modal" role="dialog">
                         <h3>Вы переходите на внешний ресурс</h3>
                         <p>Проверьте адрес перед переходом:</p>
-                        <p className="site-external-resource-url">{externalNavigationUrl}</p>
+                        <p className="site-external-resource-url">{externalNavigationRequest.targetUrl}</p>
                         <div className="site-external-resource-actions">
                             <button
                                 className="site-external-resource-cancel"
-                                onClick={() => setExternalNavigationUrl(null)}
+                                onClick={() => setExternalNavigationRequest(null)}
                                 type="button"
                             >
                                 Отмена
@@ -832,10 +857,12 @@ export function Navbar() {
                             <button
                                 className="site-external-resource-confirm"
                                 onClick={() => {
-                                    const urlToOpen = externalNavigationUrl;
-                                    setExternalNavigationUrl(null);
-                                    if (urlToOpen) {
-                                        void openExternalUrlInNewTabWithCheck(urlToOpen);
+                                    const requestToOpen = externalNavigationRequest;
+                                    setExternalNavigationRequest(null);
+                                    if (requestToOpen) {
+                                        void openExternalUrlInNewTabWithCheck(requestToOpen.targetUrl, {
+                                            notFoundPath: requestToOpen.notFoundPath
+                                        });
                                     }
                                 }}
                                 type="button"
