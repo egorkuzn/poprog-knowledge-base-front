@@ -1,4 +1,5 @@
 import {Component} from "react";
+import {requestExternalNavigation} from "../../../utils/externalNavigation";
 
 export class FooterContactsRowView extends Component<any> {
     render() {
@@ -28,7 +29,21 @@ class ContactElementView extends Component<ContactElementProp> {
         if (this.props.path === "") {
             return <li>{phrase}</li>
         } else {
-            return <li><a href={this.props.path} target="_blank" rel="noopener noreferrer">{phrase}</a></li>;
+            return (
+                <li>
+                    <a
+                        href={this.props.path}
+                        onClick={(event) => {
+                            event.preventDefault();
+                            void requestExternalNavigation(this.props.path);
+                        }}
+                        rel="noopener noreferrer"
+                        target="_blank"
+                    >
+                        {phrase}
+                    </a>
+                </li>
+            );
         }
     }
 }

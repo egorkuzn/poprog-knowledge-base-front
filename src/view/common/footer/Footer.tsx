@@ -1,9 +1,11 @@
 import {useCallback} from "react";
+import type {MouseEvent as ReactMouseEvent} from "react";
 import {Link} from "react-router-dom";
 import {ProjectsFooterRow} from "../../../data/footer/ProjectsFooterRow";
 import {getGroupedPublications, getGroupedStudentWorks} from "../../../api/knowledgeBaseApi";
 import {useRemoteData} from "../../../hooks/useRemoteData";
 import type {FooterRawDataElement} from "../../../model/footer/FooterRawDataElement";
+import {requestExternalNavigation} from "../../../utils/externalNavigation";
 import searchIcon from "../../../assets/home/icons/search.svg";
 import arrowTopIcon from "../../../assets/home/icons/arrow-top.svg";
 
@@ -32,6 +34,11 @@ export function Footer() {
         window.dispatchEvent(new CustomEvent("site-search:open"));
     };
 
+    const handleExternalLinkClick = (url: string) => (event: ReactMouseEvent<HTMLAnchorElement>) => {
+        event.preventDefault();
+        void requestExternalNavigation(url);
+    };
+
     return (
         <footer className="site-footer">
             <div className="site-footer-top">
@@ -51,9 +58,9 @@ export function Footer() {
                 <div className="site-footer-meta" id="contacts">
                     <p>Почта: poprog.industrial@gmail.com</p>
                     <div className="site-footer-socials">
-                        <a href="https://t.me/poprog" rel="noopener noreferrer" target="_blank">Телеграмм</a>
-                        <a href="https://reddit.com/r/poprog/" rel="noopener noreferrer" target="_blank">Реддит</a>
-                        <a href="https://github.com/egorkuzn/poprog-knowledge-base-front" rel="noopener noreferrer" target="_blank">Гитхаб</a>
+                        <a href="https://t.me/poprog" onClick={handleExternalLinkClick("https://t.me/poprog")} rel="noopener noreferrer" target="_blank">Телеграмм</a>
+                        <a href="https://reddit.com/r/poprog/" onClick={handleExternalLinkClick("https://reddit.com/r/poprog/")} rel="noopener noreferrer" target="_blank">Реддит</a>
+                        <a href="https://github.com/egorkuzn/poprog-knowledge-base-front" onClick={handleExternalLinkClick("https://github.com/egorkuzn/poprog-knowledge-base-front")} rel="noopener noreferrer" target="_blank">Гитхаб</a>
                     </div>
                     <a href="#about">О нас</a>
                     <a href="#support">Помочь проекту</a>

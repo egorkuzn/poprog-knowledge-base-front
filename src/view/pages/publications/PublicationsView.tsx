@@ -1,27 +1,43 @@
 import {useCallback} from "react";
-import type {JSX} from "react";
+import type {JSX, MouseEvent as ReactMouseEvent} from "react";
 import BodyView from "../BodyView";
 import "../../../styles/pages/Publications.scss";
 import {getGroupedPublications} from "../../../api/knowledgeBaseApi";
 import type {PublicationModel, PublicationsByDateDto} from "../../../api/types";
 import {useRemoteData} from "../../../hooks/useRemoteData";
+import {isExternalResourceUrl, requestExternalNavigation} from "../../../utils/externalNavigation";
 
 export function PublicationsView() {
     const loadPublications = useCallback(() => getGroupedPublications(), []);
     const {data, error, isLoading} = useRemoteData(loadPublications);
+    const handlePublicationLinkClick = (publicationLink: string) => (event: ReactMouseEvent<HTMLAnchorElement>) => {
+        if (!isExternalResourceUrl(publicationLink)) {
+            return;
+        }
 
-    return BodyView(page(data, isLoading, error));
+        event.preventDefault();
+        void requestExternalNavigation(publicationLink);
+    };
+
+    return BodyView(page(data, isLoading, error, handlePublicationLinkClick));
 }
 
-function renderPublicationLink(publication: PublicationModel, element: JSX.Element) {
+type PublicationLinkClickHandler = (publicationLink: string) => (event: ReactMouseEvent<HTMLAnchorElement>) => void;
+
+function renderPublicationLink(publication: PublicationModel, element: JSX.Element, onPublicationLinkClick: PublicationLinkClickHandler) {
     return publication.link === "" ? element : (
-        <a href={publication.link} target="_blank" rel="noopener noreferrer">
+        <a href={publication.link} onClick={onPublicationLinkClick(publication.link)} rel="noopener noreferrer" target="_blank">
             {element}
         </a>
     );
 }
 
-function page(publications: PublicationsByDateDto[] | null, isLoading: boolean, error: string | null) {
+function page(
+    publications: PublicationsByDateDto[] | null,
+    isLoading: boolean,
+    error: string | null,
+    onPublicationLinkClick: PublicationLinkClickHandler
+) {
     return (
         <main>
             <div className="publications-page">
@@ -37,12 +53,13 @@ function page(publications: PublicationsByDateDto[] | null, isLoading: boolean, 
                         {publicationsByDate.publications.map((publication, index) => (
                             <div className="publication" key={`${publicationsByDate.date}-${index}-${publication.theme}`}>
                                 <div className="publication-authors-titles">
-                                    {renderPublicationLink(publication, <p>{publication.authors}</p>)}
-                                    {renderPublicationLink(publication, <p>{publication.theme}</p>)}
+                                    {renderPublicationLink(publication, <p>{publication.authors}</p>, onPublicationLinkClick)}
+                                    {renderPublicationLink(publication, <p>{publication.theme}</p>, onPublicationLinkClick)}
                                 </div>
                                 {renderPublicationLink(
                                     publication,
-                                    <p className="publication-published">{publication.published}</p>
+                                    <p className="publication-published">{publication.published}</p>,
+                                    onPublicationLinkClick
                                 )}
                             </div>
                         ))}
