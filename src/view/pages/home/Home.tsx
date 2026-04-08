@@ -2,6 +2,7 @@ import {useMemo, useState} from "react";
 import {Link} from "react-router-dom";
 import BodyView from "../BodyView";
 import "../../../styles/pages/Home.scss";
+import {submitSiteFeedback, type SiteFeedbackChoice} from "../../../api/siteFeedbackApi";
 import heroBackground from "../../../assets/home/hero/hero-bg.png";
 import caseOneImage from "../../../assets/home/cases/case-1.png";
 import caseTwoImage from "../../../assets/home/cases/case-2.png";
@@ -47,8 +48,26 @@ const caseCards: CaseCard[] = [
     }
 ];
 
+const feedbackStorageKey = "home_feedback_choice";
+const feedbackMessages: Record<SiteFeedbackChoice, string> = {
+    yes: "Отлично, спасибо за положительную оценку.",
+    no: "Спасибо за честный ответ. Мы учтём это и улучшим портал."
+};
+const siteQualityTestDraftPath = "/tests/site-quality-test-draft.md";
+
 export function Home() {
     const [activeCaseIndex, setActiveCaseIndex] = useState(1);
+    const [feedbackChoice, setFeedbackChoice] = useState<SiteFeedbackChoice | null>(() => {
+        if (typeof window === "undefined") {
+            return null;
+        }
+
+        const storedChoice = window.localStorage.getItem(feedbackStorageKey);
+        return storedChoice === "yes" || storedChoice === "no" ? storedChoice : null;
+    });
+    const [isFeedbackSubmitting, setIsFeedbackSubmitting] = useState(false);
+    const [feedbackError, setFeedbackError] = useState("");
+    const [isFeedbackTestModalOpen, setIsFeedbackTestModalOpen] = useState(false);
     const visibleCards = useMemo(() => (
         caseCards
             .map((card, index) => ({
@@ -64,6 +83,32 @@ export function Home() {
 
     const showNextCase = () => {
         setActiveCaseIndex((currentIndex) => (currentIndex + 1) % caseCards.length);
+    };
+
+    const handleFeedbackChoice = async (choice: SiteFeedbackChoice) => {
+        if (isFeedbackSubmitting) {
+            return;
+        }
+
+        setIsFeedbackSubmitting(true);
+        setFeedbackError("");
+
+        try {
+            await submitSiteFeedback({
+                choice,
+                sentAt: new Date().toISOString()
+            });
+
+            setFeedbackChoice(choice);
+            if (typeof window !== "undefined") {
+                window.localStorage.setItem(feedbackStorageKey, choice);
+            }
+            setIsFeedbackTestModalOpen(true);
+        } catch (error) {
+            setFeedbackError(error instanceof Error ? error.message : "Не удалось отправить обратную связь.");
+        } finally {
+            setIsFeedbackSubmitting(false);
+        }
     };
 
     return BodyView(
@@ -126,16 +171,57 @@ export function Home() {
                     </div>
 
                     <div className="home-feedback-actions">
-                        <button type="button">
+                        <button
+                            aria-pressed={feedbackChoice === "yes"}
+                            className={feedbackChoice === "yes" ? "home-feedback-choice-active" : ""}
+                            onClick={() => handleFeedbackChoice("yes")}
+                            disabled={isFeedbackSubmitting}
+                            type="button"
+                        >
                             <span>Да</span>
                             <img alt="" aria-hidden="true" src={likeIcon}/>
                         </button>
-                        <button type="button">
+                        <button
+                            aria-pressed={feedbackChoice === "no"}
+                            className={feedbackChoice === "no" ? "home-feedback-choice-active" : ""}
+                            onClick={() => handleFeedbackChoice("no")}
+                            disabled={isFeedbackSubmitting}
+                            type="button"
+                        >
                             <span>Нет</span>
                             <img alt="" aria-hidden="true" src={dislikeIcon}/>
                         </button>
                     </div>
+                    {isFeedbackSubmitting && <p className="home-feedback-status">Отправляем ответ...</p>}
+                    {feedbackChoice && <p className="home-feedback-status">{feedbackMessages[feedbackChoice]}</p>}
+                    {feedbackError.length > 0 && <p className="home-feedback-status home-feedback-status-error">{feedbackError}</p>}
                 </section>
+
+                {isFeedbackTestModalOpen && (
+                    <div className="home-feedback-modal-backdrop">
+                        <div className="home-feedback-modal" role="dialog" aria-label="Подробный тест качества сайта">
+                            <h4>Спасибо за ответ</h4>
+                            <p>Хотите пройти подробный тест по качеству сайта?</p>
+                            <div className="home-feedback-modal-actions">
+                                <button
+                                    onClick={() => setIsFeedbackTestModalOpen(false)}
+                                    type="button"
+                                >
+                                    Позже
+                                </button>
+                                <button
+                                    onClick={() => {
+                                        window.open(siteQualityTestDraftPath, "_blank");
+                                        setIsFeedbackTestModalOpen(false);
+                                    }}
+                                    type="button"
+                                >
+                                    Пройти тест
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
         </main>
     );
 }
