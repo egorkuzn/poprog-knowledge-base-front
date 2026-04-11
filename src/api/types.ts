@@ -1,4 +1,5 @@
 export interface PublicationModel {
+    id: number
     authors: string
     theme: string
     published: string
@@ -11,6 +12,7 @@ export interface PublicationsByDateDto {
 }
 
 export interface WorkModel {
+    id: number
     authors: string
     theme: string
     published: string

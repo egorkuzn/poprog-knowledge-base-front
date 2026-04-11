@@ -11,6 +11,12 @@
 .work {
   display: grid;
   row-gap: 0;
+  scroll-margin-top: 96px;
+}
+
+.work.search-focus-highlight {
+  background: #fff4d6;
+  transition: background-color 0.35s ease;
 }
 
 .work-authors-titles {

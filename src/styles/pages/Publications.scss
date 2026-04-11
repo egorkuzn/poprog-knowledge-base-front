@@ -16,6 +16,12 @@
 .publication {
   display: grid;
   row-gap: 0;
+  scroll-margin-top: 96px;
+}
+
+.publication.search-focus-highlight {
+  background: #fff4d6;
+  transition: background-color 0.35s ease;
 }
 
 .publication-authors-titles {
