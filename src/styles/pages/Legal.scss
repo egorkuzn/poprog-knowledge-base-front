@@ -1,12 +1,21 @@
 .legal-page {
-  padding: 32px 24px 56px;
+  padding: 34px 24px 72px;
+  min-height: 62vh;
+  background:
+    radial-gradient(circle at top right, rgba(69, 124, 224, 0.12) 0%, rgba(69, 124, 224, 0) 42%),
+    linear-gradient(180deg, #f7f7f8 0%, #f2f3f7 100%);
 }
 
 .legal-page-content {
-  max-width: 860px;
+  max-width: 760px;
   margin: 0 auto;
   display: grid;
   gap: 18px;
+  padding: 28px 26px;
+  border-radius: 22px;
+  border: 1px solid #dde1ea;
+  background: #ffffff;
+  box-shadow: 0 18px 44px rgba(24, 38, 78, 0.08);
 }
 
 .legal-page-content h1 {
@@ -20,17 +29,20 @@
 .legal-page-content p {
   margin: 0;
   font-size: 17px;
-  line-height: 1.6;
+  line-height: 1.64;
   color: #2f2f2f;
+  max-width: 70ch;
 }
 
 @media (max-width: 720px) {
   .legal-page {
-    padding: 18px 16px 36px;
+    padding: 18px 12px 38px;
   }
 
   .legal-page-content {
     gap: 14px;
+    padding: 18px 14px;
+    border-radius: 16px;
   }
 
   .legal-page-content p {

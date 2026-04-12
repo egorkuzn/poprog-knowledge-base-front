@@ -146,3 +146,26 @@ export interface UpdateDonationStatusRequest {
     status: "PENDING" | "SUCCEEDED" | "CANCELED"
     providerPaymentId?: string
 }
+
+export interface MarketApp {
+    id: string
+    title: string
+    summary: string
+    category: string
+    tags: string[]
+    platform: string
+    version: string
+    priceModel: string
+    downloadUrl: string | null
+}
+
+export interface MarketSearchResponse {
+    query: string
+    category: string | null
+    total: number
+    items: MarketApp[]
+}
+
+export interface MarketCategoriesResponse {
+    categories: string[]
+}

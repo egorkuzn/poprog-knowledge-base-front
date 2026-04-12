@@ -1,6 +1,7 @@
 import {useCallback, useEffect} from "react";
 import {useSearchParams} from "react-router-dom";
 import BodyView from "../BodyView";
+import {Breadcrumbs} from "../../common/navigation/Breadcrumbs";
 import "../../../styles/pages/Works.scss";
 import {getGroupedStudentWorks} from "../../../api/knowledgeBaseApi";
 import type {WorkModel, WorksByProjectTypeDto} from "../../../api/types";
@@ -39,6 +40,7 @@ function page(worksData: WorksByProjectTypeDto[] | null, isLoading: boolean, err
     return (
         <main>
             <div className="works-page">
+                <Breadcrumbs items={[{label: "Главная", to: "/home"}, {label: "Студенческие работы"}]}/>
                 <h1>Дипломные работы и диссертации</h1>
                 {isLoading && <p className="remote-data-state">Загрузка работ...</p>}
                 {error && <p className="remote-data-state remote-data-state-error">Не удалось загрузить работы: {error}</p>}

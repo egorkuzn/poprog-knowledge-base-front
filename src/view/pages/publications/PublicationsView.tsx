@@ -2,6 +2,7 @@ import {useCallback, useEffect} from "react";
 import type {JSX, MouseEvent as ReactMouseEvent} from "react";
 import {useSearchParams} from "react-router-dom";
 import BodyView from "../BodyView";
+import {Breadcrumbs} from "../../common/navigation/Breadcrumbs";
 import "../../../styles/pages/Publications.scss";
 import {getGroupedPublications} from "../../../api/knowledgeBaseApi";
 import type {PublicationModel, PublicationsByDateDto} from "../../../api/types";
@@ -64,6 +65,7 @@ function page(
     return (
         <main>
             <div className="publications-page">
+                <Breadcrumbs items={[{label: "Главная", to: "/home"}, {label: "Публикации"}]}/>
                 <h1>Публикации</h1>
                 {isLoading && <p className="remote-data-state">Загрузка публикаций...</p>}
                 {error && <p className="remote-data-state remote-data-state-error">Не удалось загрузить публикации: {error}</p>}

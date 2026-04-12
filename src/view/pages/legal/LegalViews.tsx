@@ -1,4 +1,5 @@
 import BodyView from "../BodyView";
+import {Breadcrumbs} from "../../common/navigation/Breadcrumbs";
 import "../../../styles/pages/Legal.scss";
 
 interface LegalPageProps {
@@ -10,6 +11,7 @@ function LegalPage(props: LegalPageProps) {
     return BodyView(
         <main className="legal-page">
             <section className="legal-page-content">
+                <Breadcrumbs items={[{label: "Главная", to: "/home"}, {label: props.title}]}/>
                 <h1>{props.title}</h1>
                 {props.paragraphs.map((paragraph) => (
                     <p key={paragraph}>{paragraph}</p>

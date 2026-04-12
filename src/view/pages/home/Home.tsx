@@ -22,6 +22,7 @@ interface CaseCard {
     image: string
     logo: string
     accent: string
+    link: string
 }
 
 const caseCards: CaseCard[] = [
@@ -30,21 +31,24 @@ const caseCards: CaseCard[] = [
         description: "Управляющие процессы для линий розлива ускоряют выпуск продукции и помогают удерживать качество на каждом этапе производственного цикла.",
         image: caseOneImage,
         logo: caseOneLogo,
-        accent: "rgba(128, 245, 104, 0.6)"
+        accent: "rgba(128, 245, 104, 0.6)",
+        link: "/projects/success-stories"
     },
     {
         company: "GFmark",
         description: "GFmark переводит разработку для оборудования на poST и гарантирует соответствие своей продукции всем необходимым сертификатам и стандартам безопасности.",
         image: caseTwoImage,
         logo: caseTwoLogo,
-        accent: "rgba(255, 192, 160, 0.55)"
+        accent: "rgba(255, 192, 160, 0.55)",
+        link: "/projects/post"
     },
     {
         company: "Обь-Иртышводпуть",
         description: "ФБУ «Администрация «Обь-Иртышводпуть» модернизирует процессы Новосибирского шлюза с 50-летней историей.",
         image: caseThreeImage,
         logo: caseThreeLogo,
-        accent: "rgba(100, 204, 255, 0.5)"
+        accent: "rgba(100, 204, 255, 0.5)",
+        link: "/projects/industrial-c"
     }
 ];
 
@@ -123,7 +127,7 @@ export function Home() {
                     </div>
                 </section>
 
-                <section className="home-cases-section">
+                <section className="home-cases-section" id="about">
                     <div className="home-section-copy">
                         <h2>Внедрение новых решений в каждой отрасли</h2>
                         <p>Узнайте, как Poprog помогает организациям создавать, масштабировать и трансформироваться.</p>
@@ -133,10 +137,15 @@ export function Home() {
                         {visibleCards.map((card) => {
                             const isActive = card.position === 0;
                             const isPreview = card.position === 1 || card.position === 2;
+                            const previewSideClass = card.position === 1
+                                ? " home-case-card-right"
+                                : card.position === 2
+                                    ? " home-case-card-left"
+                                    : "";
 
                             return (
                                 <article
-                                    className={`home-case-card${isActive ? " home-case-card-active" : ""}${isPreview ? " home-case-card-preview" : ""}`}
+                                    className={`home-case-card${isActive ? " home-case-card-active" : ""}${isPreview ? " home-case-card-preview" : ""}${previewSideClass}`}
                                     key={card.company}
                                     style={{boxShadow: `0 24px 36px ${card.accent}`}}
                                 >
@@ -144,9 +153,9 @@ export function Home() {
                                     <div className="home-case-overlay">
                                         <img alt={`${card.company} logo`} className="home-case-logo" src={card.logo}/>
                                         <p>{card.description}</p>
-                                        <button className="home-case-link" type="button" aria-label={`Открыть кейс ${card.company}`}>
+                                        <Link className="home-case-link" to={card.link} aria-label={`Открыть кейс ${card.company}`}>
                                             <img alt="" aria-hidden="true" src={arrowRightAltIcon}/>
-                                        </button>
+                                        </Link>
                                     </div>
                                 </article>
                             );

@@ -1,5 +1,6 @@
 import {useEffect, useMemo, useRef, useState} from "react";
-import {Link, NavLink, useLocation} from "react-router-dom";
+import {Link, NavLink, useLocation, useNavigate} from "react-router-dom";
+import type {MouseEvent as ReactMouseEvent} from "react";
 import {searchKnowledgeBase} from "../../../api/knowledgeBaseApi";
 import {apiBaseUrl} from "../../../api/config";
 import type {SearchResultItem} from "../../../api/types";
@@ -21,7 +22,7 @@ import caseTwoImage from "../../../assets/home/cases/case-2.png";
 type SearchState = "idle" | "loading" | "ready" | "error";
 type ProjectLeafItem = { slug: string, title: string };
 type SearchFilter = "all" | "publication" | "work";
-type TopLinkAction = "openRideSignup" | "openRideConsole";
+type TopLinkAction = "openRideSignup" | "openRideConsole" | "openAccount";
 type TopLinkItem = {
     label: string
     icon?: string
@@ -32,9 +33,9 @@ type TopLinkItem = {
 const topLinks: TopLinkItem[] = [
     {label: "Помочь проекту", to: "/home#support", icon: supportIcon},
     {label: "Свяжитесь с нами", to: "/home#contacts"},
-    {label: "Poprog маркет", to: "/projects"},
+    {label: "Poprog маркет", to: "/market"},
     {label: "Поддержка", to: "/home#support"},
-    {label: "Мой аккаунт", action: "openRideSignup", icon: accountIcon}
+    {label: "Мой аккаунт", action: "openAccount", icon: accountIcon}
 ];
 
 const projectsCategories = [
@@ -293,6 +294,7 @@ export function Navbar() {
     const inputRef = useRef<HTMLInputElement | null>(null);
     const requestIdRef = useRef(0);
     const location = useLocation();
+    const navigate = useNavigate();
     const trimmedQuery = searchQuery.trim();
 
     useEffect(() => {
@@ -536,6 +538,13 @@ export function Navbar() {
         void requestExternalNavigation(rideSignupUrl);
     };
 
+    const openAccount = () => {
+        setIsMenuOpen(false);
+        setIsProjectsPanelOpen(false);
+        setIsSearchOpen(false);
+        navigate("/account");
+    };
+
     const activeProjectsCategory = projectsCategories[activeProjectsCategoryIndex] ?? projectsCategories[0];
     const mobileProjectsCategory = projectsCategories[mobileProjectsCategoryIndex] ?? projectsCategories[0];
     const mobileProjectsItems = mobileProjectsItemsByCategory[mobileProjectsCategory.key] ?? [];
@@ -563,6 +572,36 @@ export function Navbar() {
         });
     };
 
+    const scrollToAnchorIfExists = (anchorId: string) => {
+        const targetElement = document.getElementById(anchorId);
+        if (!targetElement) {
+            return;
+        }
+
+        targetElement.scrollIntoView({
+            behavior: "smooth",
+            block: "start"
+        });
+    };
+
+    const handleTopLinkHashClick = (to: string) => (event: ReactMouseEvent<HTMLAnchorElement>) => {
+        const hashIndex = to.indexOf("#");
+        if (hashIndex < 0) {
+            return;
+        }
+
+        const targetPath = to.slice(0, hashIndex) || location.pathname;
+        const anchorId = to.slice(hashIndex + 1);
+        if (!anchorId) {
+            return;
+        }
+
+        if (targetPath === location.pathname) {
+            event.preventDefault();
+            scrollToAnchorIfExists(anchorId);
+        }
+    };
+
     const renderTopLink = (link: TopLinkItem, key: string, className: string) => {
         const content = (
             <>
@@ -587,8 +626,21 @@ export function Navbar() {
             );
         }
 
+        if (link.action === "openAccount") {
+            return (
+                <button className={className} key={key} onClick={openAccount} type="button">
+                    {content}
+                </button>
+            );
+        }
+
         return (
-            <Link className={className} key={key} to={link.to ?? "/home"}>
+            <Link
+                className={className}
+                key={key}
+                onClick={link.to?.includes("#") ? handleTopLinkHashClick(link.to) : undefined}
+                to={link.to ?? "/home"}
+            >
                 {content}
             </Link>
         );
@@ -698,6 +750,9 @@ export function Navbar() {
                                         <button className="site-navigation-link site-navigation-dropdown-link" onClick={openRideSignup} type="button">
                                             Создать аккаунт
                                         </button>
+                                        <button className="site-navigation-link site-navigation-dropdown-link" onClick={openAccount} type="button">
+                                            Мой аккаунт
+                                        </button>
                                     </div>
                                 </div>
                             )}
@@ -709,8 +764,8 @@ export function Navbar() {
                                 <span>Поиск</span>
                             </button>
                             <button className="site-console-button" onClick={openRideConsole} type="button">Вход в консоль</button>
-                            <button className="site-account-button" onClick={openRideSignup} type="button">Создать аккаунт</button>
-                            <button className="site-mobile-account-button" onClick={openRideSignup} type="button">
+                            <button className="site-account-button" onClick={openAccount} type="button">Мой аккаунт</button>
+                            <button className="site-mobile-account-button" onClick={openAccount} type="button">
                                 <img alt="" aria-hidden="true" src={accountIcon}/>
                             </button>
                         </div>
