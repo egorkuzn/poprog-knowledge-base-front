@@ -39,8 +39,8 @@ export function WorksView() {
 function page(worksData: WorksByProjectTypeDto[] | null, isLoading: boolean, error: string | null) {
     return (
         <main>
+            <Breadcrumbs items={[{label: "Главная", to: "/home"}, {label: "Студенческие работы"}]}/>
             <div className="works-page">
-                <Breadcrumbs items={[{label: "Главная", to: "/home"}, {label: "Студенческие работы"}]}/>
                 <h1>Дипломные работы и диссертации</h1>
                 {isLoading && <p className="remote-data-state">Загрузка работ...</p>}
                 {error && <p className="remote-data-state remote-data-state-error">Не удалось загрузить работы: {error}</p>}

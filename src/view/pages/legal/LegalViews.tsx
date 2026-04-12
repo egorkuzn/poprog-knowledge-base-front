@@ -10,8 +10,8 @@ interface LegalPageProps {
 function LegalPage(props: LegalPageProps) {
     return BodyView(
         <main className="legal-page">
+            <Breadcrumbs items={[{label: "Главная", to: "/home"}, {label: props.title}]}/>
             <section className="legal-page-content">
-                <Breadcrumbs items={[{label: "Главная", to: "/home"}, {label: props.title}]}/>
                 <h1>{props.title}</h1>
                 {props.paragraphs.map((paragraph) => (
                     <p key={paragraph}>{paragraph}</p>

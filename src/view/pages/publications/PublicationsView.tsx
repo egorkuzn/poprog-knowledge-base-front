@@ -64,8 +64,8 @@ function page(
 ) {
     return (
         <main>
+            <Breadcrumbs items={[{label: "Главная", to: "/home"}, {label: "Публикации"}]}/>
             <div className="publications-page">
-                <Breadcrumbs items={[{label: "Главная", to: "/home"}, {label: "Публикации"}]}/>
                 <h1>Публикации</h1>
                 {isLoading && <p className="remote-data-state">Загрузка публикаций...</p>}
                 {error && <p className="remote-data-state remote-data-state-error">Не удалось загрузить публикации: {error}</p>}
