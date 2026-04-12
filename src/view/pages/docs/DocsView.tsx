@@ -1,5 +1,6 @@
 import BodyView from "../BodyView";
 import {Breadcrumbs} from "../../common/navigation/Breadcrumbs";
+import "../../../styles/common/PageShell.scss";
 
 export function DocsView() {
     return (BodyView(page()))
@@ -7,9 +8,12 @@ export function DocsView() {
 
 function page() {
     return (
-        <main>
+        <main className="site-page">
             <Breadcrumbs items={[{label: "Главная", to: "/home"}, {label: "Документация"}]}/>
-            <h1>Docs View</h1>
+            <section className="site-page-content">
+                <h1>Документация</h1>
+                <p className="site-page-muted">Раздел заполняется. Здесь будут инструкции по установке, запуску и работе с инструментами Poprog.</p>
+            </section>
         </main>
     )
 }

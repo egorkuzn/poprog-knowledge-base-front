@@ -31,10 +31,10 @@ type TopLinkItem = {
 };
 
 const topLinks: TopLinkItem[] = [
-    {label: "Помочь проекту", to: "/home#support", icon: supportIcon},
-    {label: "Свяжитесь с нами", to: "/home#contacts"},
+    {label: "Помочь проекту", to: "/donate", icon: supportIcon},
+    {label: "Свяжитесь с нами", to: "/contact"},
     {label: "Poprog маркет", to: "/market"},
-    {label: "Поддержка", to: "/home#support"},
+    {label: "Поддержка", to: "/support"},
     {label: "Мой аккаунт", action: "openAccount", icon: accountIcon}
 ];
 

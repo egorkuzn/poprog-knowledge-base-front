@@ -91,7 +91,9 @@ export function Footer() {
                         <a href="https://github.com/egorkuzn/poprog-knowledge-base-front" onClick={handleExternalLinkClick("https://github.com/egorkuzn/poprog-knowledge-base-front")} rel="noopener noreferrer" target="_blank">Гитхаб</a>
                     </div>
                     <Link onClick={handleHashLinkClick("/home#about")} to="/home#about">О нас</Link>
-                    <Link onClick={handleHashLinkClick("/home#support")} to="/home#support">Помочь проекту</Link>
+                    <Link to="/donate">Помочь проекту</Link>
+                    <Link to="/support">Поддержка</Link>
+                    <Link to="/contact">Свяжитесь с нами</Link>
                     <p>© poprog 2026</p>
                 </div>
             </div>

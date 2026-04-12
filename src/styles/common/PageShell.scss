@@ -1,0 +1,23 @@
+.site-page {
+  min-height: 62vh;
+  padding-bottom: 36px;
+}
+
+.site-page-content {
+  padding: 0 2em;
+}
+
+.site-page-content h1 {
+  margin: 0;
+}
+
+.site-page-muted {
+  margin-top: 10px;
+  color: #5a6377;
+}
+
+@media (max-width: 720px) {
+  .site-page-content {
+    padding: 0 16px;
+  }
+}

@@ -1,0 +1,60 @@
+.support-contact-page {
+  padding: 12px 20px 34px;
+  min-height: 62vh;
+  background: #f5f7fb;
+}
+
+.support-contact-card {
+  margin: 0 auto;
+  max-width: 1100px;
+  border-radius: 16px;
+  border: 1px solid #dbe1ef;
+  background: #fff;
+  padding: 18px;
+  display: grid;
+  gap: 10px;
+}
+
+.support-contact-card h1,
+.support-contact-card p {
+  margin: 0;
+}
+
+.support-contact-card p {
+  color: #4e5871;
+}
+
+.support-contact-card textarea {
+  min-height: 180px;
+  border-radius: 10px;
+  border: 1px solid #cfd7ea;
+  padding: 10px 12px;
+  font: inherit;
+}
+
+.support-contact-card button {
+  width: fit-content;
+  min-height: 40px;
+  border: 0;
+  border-radius: 999px;
+  background: #151515;
+  color: #fff;
+  padding: 0 16px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.support-contact-list {
+  display: grid;
+  gap: 6px;
+}
+
+.support-contact-muted {
+  color: #69738d;
+}
+
+@media (max-width: 720px) {
+  .support-contact-page {
+    padding: 10px 10px 24px;
+  }
+}

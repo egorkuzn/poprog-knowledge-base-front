@@ -5,8 +5,8 @@
 }
 
 .account-hero {
-  margin: 0 auto 16px;
-  max-width: 1060px;
+  margin: 0 0 16px;
+  width: 100%;
   padding: 18px 20px;
   border-radius: 16px;
   background: #ffffff;
@@ -24,8 +24,7 @@
 }
 
 .account-state {
-  max-width: 1060px;
-  margin: 8px auto;
+  margin: 8px 0;
 }
 
 .account-state-error {
@@ -33,12 +32,21 @@
 }
 
 .account-card {
-  max-width: 1060px;
-  margin: 0 auto 14px;
+  margin: 0 0 14px;
   padding: 16px 18px;
   border-radius: 16px;
   border: 1px solid #dee3ef;
   background: #ffffff;
+}
+
+.account-wide-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(280px, 1fr));
+  gap: 14px;
+}
+
+.account-card-full {
+  grid-column: 1 / -1;
 }
 
 .account-card h2 {
@@ -84,6 +92,14 @@
 @media (max-width: 720px) {
   .account-page {
     padding: 10px 10px 32px;
+  }
+
+  .account-wide-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .account-card-full {
+    grid-column: auto;
   }
 
   .account-grid {

@@ -96,7 +96,7 @@ export function AccountView() {
 
             <section className="account-hero">
                 <h1>Личный кабинет</h1>
-                <p>Тестовый режим авторизации включен через debug headers.</p>
+                <p>Вы вошли в тестовый профиль. Данные можно использовать для отладки интеграций.</p>
             </section>
 
             {isLoading && <p className="account-state">Загружаем личный кабинет...</p>}
@@ -114,49 +114,51 @@ export function AccountView() {
                         </div>
                     </section>
 
-                    <section className="account-card">
-                        <div className="account-card-header">
-                            <h2>Донаты</h2>
-                            <button disabled={isCreatingDonation} onClick={handleCreateDonation} type="button">
-                                {isCreatingDonation ? "Создаём..." : "Поддержать проект (300 ₽)"}
-                            </button>
-                        </div>
-                        {donations.length === 0 ? <p>Пожертвований пока нет.</p> : (
-                            <ul className="account-list">
-                                {donations.map((item) => (
-                                    <li key={item.id}>
-                                        <strong>{item.amount} {item.currency}</strong> · {item.status} · {new Date(item.createdAt).toLocaleString()}
-                                    </li>
-                                ))}
-                            </ul>
-                        )}
-                    </section>
+                    <div className="account-wide-grid">
+                        <section className="account-card">
+                            <div className="account-card-header">
+                                <h2>Донаты</h2>
+                                <button disabled={isCreatingDonation} onClick={handleCreateDonation} type="button">
+                                    {isCreatingDonation ? "Создаём..." : "Поддержать проект (300 ₽)"}
+                                </button>
+                            </div>
+                            {donations.length === 0 ? <p>Пожертвований пока нет.</p> : (
+                                <ul className="account-list">
+                                    {donations.map((item) => (
+                                        <li key={item.id}>
+                                            <strong>{item.amount} {item.currency}</strong> · {item.status} · {new Date(item.createdAt).toLocaleString()}
+                                        </li>
+                                    ))}
+                                </ul>
+                            )}
+                        </section>
 
-                    <section className="account-card">
-                        <h2>Избранное</h2>
-                        {favorites.length === 0 ? <p>Избранное пока пусто.</p> : (
-                            <ul className="account-list">
-                                {favorites.map((item) => (
-                                    <li key={item.id}>
-                                        <strong>{item.title}</strong> · {item.itemType} · {item.itemId}
-                                    </li>
-                                ))}
-                            </ul>
-                        )}
-                    </section>
+                        <section className="account-card">
+                            <h2>Избранное</h2>
+                            {favorites.length === 0 ? <p>Избранное пока пусто.</p> : (
+                                <ul className="account-list">
+                                    {favorites.map((item) => (
+                                        <li key={item.id}>
+                                            <strong>{item.title}</strong> · {item.itemType} · {item.itemId}
+                                        </li>
+                                    ))}
+                                </ul>
+                            )}
+                        </section>
 
-                    <section className="account-card">
-                        <h2>Мои чаты</h2>
-                        {chats.length === 0 ? <p>Чатов пока нет.</p> : (
-                            <ul className="account-list">
-                                {chats.map((item) => (
-                                    <li key={item.chatId}>
-                                        <strong>{item.messageCount} сообщений</strong> · {new Date(item.createdAt).toLocaleString()} · {item.lastMessagePreview ?? "без превью"}
-                                    </li>
-                                ))}
-                            </ul>
-                        )}
-                    </section>
+                        <section className="account-card account-card-full">
+                            <h2>Мои чаты</h2>
+                            {chats.length === 0 ? <p>Чатов пока нет.</p> : (
+                                <ul className="account-list">
+                                    {chats.map((item) => (
+                                        <li key={item.chatId}>
+                                            <strong>{item.messageCount} сообщений</strong> · {new Date(item.createdAt).toLocaleString()} · {item.lastMessagePreview ?? "без превью"}
+                                        </li>
+                                    ))}
+                                </ul>
+                            )}
+                        </section>
+                    </div>
                 </>
             )}
         </main>
