@@ -1,6 +1,6 @@
 import {useCallback} from "react";
 import type {MouseEvent as ReactMouseEvent} from "react";
-import {Link} from "react-router-dom";
+import {Link, useLocation, useNavigate} from "react-router-dom";
 import {ProjectsFooterRow} from "../../../data/footer/ProjectsFooterRow";
 import {getGroupedPublications, getGroupedStudentWorks} from "../../../api/knowledgeBaseApi";
 import {useRemoteData} from "../../../hooks/useRemoteData";
@@ -10,6 +10,8 @@ import searchIcon from "../../../assets/home/icons/search.svg";
 import arrowTopIcon from "../../../assets/home/icons/arrow-top.svg";
 
 export function Footer() {
+    const navigate = useNavigate();
+    const location = useLocation();
     const loadWorks = useCallback(() => getGroupedStudentWorks(), []);
     const loadPublications = useCallback(() => getGroupedPublications(), []);
     const worksState = useRemoteData(loadWorks);
@@ -39,10 +41,36 @@ export function Footer() {
         void requestExternalNavigation(url);
     };
 
+    const openAccount = () => navigate("/account");
+
+    const handleHashLinkClick = (to: string) => (event: ReactMouseEvent<HTMLAnchorElement>) => {
+        const hashIndex = to.indexOf("#");
+        if (hashIndex < 0) {
+            return;
+        }
+
+        const targetPath = to.slice(0, hashIndex) || location.pathname;
+        const targetId = to.slice(hashIndex + 1);
+        if (targetPath !== location.pathname || targetId.length === 0) {
+            return;
+        }
+
+        event.preventDefault();
+        const targetElement = document.getElementById(targetId);
+        if (!targetElement) {
+            return;
+        }
+
+        targetElement.scrollIntoView({
+            behavior: "smooth",
+            block: "start"
+        });
+    };
+
     return (
         <footer className="site-footer">
             <div className="site-footer-top">
-                <button className="site-footer-ride-button" type="button">Создать аккаунт RIDE</button>
+                <button className="site-footer-ride-button" onClick={openAccount} type="button">Мой аккаунт</button>
 
                 <button className="site-footer-search-button" onClick={openSearchFromFooter} type="button">
                     <span>Поиск</span>
@@ -62,22 +90,24 @@ export function Footer() {
                         <a href="https://reddit.com/r/poprog/" onClick={handleExternalLinkClick("https://reddit.com/r/poprog/")} rel="noopener noreferrer" target="_blank">Реддит</a>
                         <a href="https://github.com/egorkuzn/poprog-knowledge-base-front" onClick={handleExternalLinkClick("https://github.com/egorkuzn/poprog-knowledge-base-front")} rel="noopener noreferrer" target="_blank">Гитхаб</a>
                     </div>
-                    <a href="#about">О нас</a>
-                    <a href="#support">Помочь проекту</a>
+                    <Link onClick={handleHashLinkClick("/home#about")} to="/home#about">О нас</Link>
+                    <Link to="/donate">Помочь проекту</Link>
+                    <Link to="/support">Поддержка</Link>
+                    <Link to="/contact">Свяжитесь с нами</Link>
                     <p>© poprog 2026</p>
                 </div>
             </div>
 
             <div className="site-footer-bottom">
-                <a className="site-footer-to-top" href="#top">
+                <Link className="site-footer-to-top" onClick={handleHashLinkClick("/home#top")} to="/home#top">
                     <span>В начало</span>
                     <img alt="" aria-hidden="true" src={arrowTopIcon}/>
-                </a>
+                </Link>
 
                 <div className="site-footer-legal">
-                    <a href="#privacy">Конфиденциальность</a>
-                    <a href="#terms">Условия пользования сайтом</a>
-                    <a href="#cookies">Параметры файлов cookie</a>
+                    <Link to="/privacy">Конфиденциальность</Link>
+                    <Link to="/terms">Условия пользования сайтом</Link>
+                    <Link to="/cookies">Параметры файлов cookie</Link>
                 </div>
             </div>
         </footer>
@@ -96,9 +126,17 @@ function FooterColumn(props: FooterColumnProps) {
             <h4>{props.title}</h4>
             <div className="site-footer-links">
                 {props.values.map((item) => (
-                    <Link key={`${props.pathname}-${item.hash}`} to={{pathname: props.pathname, hash: item.hash}}>
-                        {item.title}
-                    </Link>
+                    props.pathname === "/projects"
+                        ? (
+                            <Link key={`${props.pathname}-${item.hash}`} to={`${props.pathname}/${item.hash}`}>
+                                {item.title}
+                            </Link>
+                        )
+                        : (
+                            <Link key={`${props.pathname}-${item.hash}`} to={{pathname: props.pathname, hash: item.hash}}>
+                                {item.title}
+                            </Link>
+                        )
                 ))}
             </div>
         </div>

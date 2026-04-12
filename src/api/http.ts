@@ -12,10 +12,46 @@ function buildUrl(path: string): string {
     return `${apiBaseUrl}${path}`;
 }
 
-export async function getJson<T>(path: string): Promise<T> {
+function getDebugAuthHeaders(): Record<string, string> {
+    const enabled = import.meta.env.VITE_DEBUG_HEADERS_ENABLED === "true";
+    if (!enabled) {
+        return {};
+    }
+
+    const sub = import.meta.env.VITE_DEBUG_USER_SUB?.trim();
+    if (!sub) {
+        return {};
+    }
+
+    const headers: Record<string, string> = {
+        subject: sub
+    };
+
+    const email = import.meta.env.VITE_DEBUG_USER_EMAIL?.trim();
+    if (email) {
+        headers.email = email;
+    }
+
+    const name = import.meta.env.VITE_DEBUG_USER_NAME?.trim();
+    if (name) {
+        headers.name = name;
+    }
+
+    const roles = import.meta.env.VITE_DEBUG_USER_ROLES?.trim();
+    if (roles) {
+        headers.roles = roles;
+    }
+
+    return headers;
+}
+
+async function requestJson<T>(path: string, init: RequestInit): Promise<T> {
     const response = await fetch(buildUrl(path), {
+        ...init,
         headers: {
-            Accept: "application/json"
+            Accept: "application/json",
+            ...getDebugAuthHeaders(),
+            ...(init.headers ?? {})
         }
     });
 
@@ -28,14 +64,39 @@ export async function getJson<T>(path: string): Promise<T> {
     return response.json() as Promise<T>;
 }
 
+export async function getJson<T>(path: string): Promise<T> {
+    return requestJson<T>(path, {
+        method: "GET"
+    });
+}
+
 export async function postJson<TResponse, TRequest>(path: string, body: TRequest): Promise<TResponse> {
-    const response = await fetch(buildUrl(path), {
+    return requestJson<TResponse>(path, {
         method: "POST",
         headers: {
-            Accept: "application/json",
             "Content-Type": "application/json"
         },
         body: JSON.stringify(body)
+    });
+}
+
+export async function putJson<TResponse, TRequest>(path: string, body: TRequest): Promise<TResponse> {
+    return requestJson<TResponse>(path, {
+        method: "PUT",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify(body)
+    });
+}
+
+export async function deleteJson(path: string): Promise<void> {
+    const response = await fetch(buildUrl(path), {
+        method: "DELETE",
+        headers: {
+            Accept: "application/json",
+            ...getDebugAuthHeaders()
+        }
     });
 
     if (!response.ok) {
@@ -43,6 +104,4 @@ export async function postJson<TResponse, TRequest>(path: string, body: TRequest
         const details = errorText ? `: ${errorText}` : "";
         throw new Error(`Request failed with status ${response.status}${details}`);
     }
-
-    return response.json() as Promise<TResponse>;
 }

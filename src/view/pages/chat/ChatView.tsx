@@ -2,6 +2,7 @@ import {useEffect, useMemo, useRef, useState} from "react";
 import type {FormEvent} from "react";
 import type {KeyboardEvent} from "react";
 import BodyView from "../BodyView";
+import {Breadcrumbs} from "../../common/navigation/Breadcrumbs";
 import "../../../styles/pages/Chat.scss";
 import {assistantChat, getAssistantChatHistory} from "../../../api/knowledgeBaseApi";
 import type {AiAssistantChatRole, ChatHistoryMessageResponse} from "../../../api/types";
@@ -236,6 +237,7 @@ export function ChatView() {
 
     return BodyView(
         <main className="chat-page">
+            <Breadcrumbs items={[{label: "Главная", to: "/home"}, {label: "ИИ-чат"}]}/>
             <section className="chat-shell">
                 <header className="chat-header">
                     <h1>Чат с ИИ агентом</h1>

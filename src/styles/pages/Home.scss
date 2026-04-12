@@ -1,6 +1,7 @@
 .home-page {
   background: #f6f4ef;
   color: #171717;
+  overflow-x: clip;
 }
 
 .home-page-main {
@@ -82,21 +83,28 @@
 }
 
 .home-cases-track {
-  display: flex;
-  justify-content: center;
-  gap: 28px;
+  position: relative;
+  display: block;
+  width: 100%;
+  height: 530px;
   padding: 38px 0 22px;
-  overflow: visible;
+  overflow: hidden;
 }
 
 .home-case-card {
-  position: relative;
+  position: absolute;
+  top: 20px;
+  left: 50%;
   width: min(42vw, 592px);
   min-width: min(42vw, 592px);
   height: 480px;
   border-radius: 34px;
   overflow: hidden;
-  flex: 0 0 auto;
+  transform: translateX(-50%) scale(0.84);
+  opacity: 0.6;
+  transition: transform 260ms ease, opacity 260ms ease, filter 260ms ease;
+  filter: saturate(0.86);
+  z-index: 1;
 }
 
 .home-case-card img {
@@ -104,11 +112,24 @@
 }
 
 .home-case-card-preview {
-  opacity: 0.95;
+  opacity: 0.8;
 }
 
 .home-case-card-active {
-  transform: translateY(8px);
+  transform: translateX(-50%) scale(1);
+  opacity: 1;
+  filter: none;
+  z-index: 3;
+}
+
+.home-case-card-right {
+  transform: translateX(calc(-50% + min(34vw, 420px))) scale(0.82);
+  z-index: 2;
+}
+
+.home-case-card-left {
+  transform: translateX(calc(-50% - min(34vw, 420px))) scale(0.82);
+  z-index: 2;
 }
 
 .home-case-image {
@@ -336,11 +357,9 @@
 
 @media (max-width: 1100px) {
   .home-cases-track {
-    justify-content: flex-start;
-    padding-left: 24px;
-    padding-right: 24px;
-    overflow-x: auto;
-    scroll-snap-type: x proximity;
+    height: 500px;
+    padding-left: 0;
+    padding-right: 0;
   }
 
   .home-case-card,
@@ -348,8 +367,14 @@
   .home-case-card-active {
     width: min(78vw, 592px);
     min-width: min(78vw, 592px);
-    transform: none;
-    scroll-snap-align: center;
+  }
+
+  .home-case-card-right {
+    transform: translateX(calc(-50% + min(48vw, 330px))) scale(0.8);
+  }
+
+  .home-case-card-left {
+    transform: translateX(calc(-50% - min(48vw, 330px))) scale(0.8);
   }
 
   .home-feedback-section {
@@ -375,8 +400,9 @@
   }
 
   .home-cases-track {
-    padding-left: 18px;
-    padding-right: 18px;
+    height: 430px;
+    padding-left: 0;
+    padding-right: 0;
   }
 
   .home-case-card,
@@ -384,7 +410,16 @@
   .home-case-card-active {
     width: min(86vw, 592px);
     min-width: min(86vw, 592px);
-    height: 420px;
+    height: 390px;
+    top: 10px;
+  }
+
+  .home-case-card-right {
+    transform: translateX(calc(-50% + min(60vw, 220px))) scale(0.76);
+  }
+
+  .home-case-card-left {
+    transform: translateX(calc(-50% - min(60vw, 220px))) scale(0.76);
   }
 
   .home-feedback-section {
