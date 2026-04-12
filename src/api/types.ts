@@ -83,3 +83,15 @@ export interface ChatHistoryResponse {
     chatId: string
     messages: ChatHistoryMessageResponse[]
 }
+
+export interface AccountProfileResponse {
+    subject: string
+    name: string
+    email: string
+    roles: string[]
+}
+
+export interface UpdateAccountProfileRequest {
+    name: string
+    email: string
+}
