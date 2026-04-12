@@ -1,5 +1,6 @@
-import {useCallback} from "react";
+import {useCallback, useEffect} from "react";
 import type {JSX, MouseEvent as ReactMouseEvent} from "react";
+import {useSearchParams} from "react-router-dom";
 import BodyView from "../BodyView";
 import "../../../styles/pages/Publications.scss";
 import {getGroupedPublications} from "../../../api/knowledgeBaseApi";
@@ -8,6 +9,7 @@ import {useRemoteData} from "../../../hooks/useRemoteData";
 import {isExternalResourceUrl, requestExternalNavigation} from "../../../utils/externalNavigation";
 
 export function PublicationsView() {
+    const [searchParams] = useSearchParams();
     const loadPublications = useCallback(() => getGroupedPublications(), []);
     const {data, error, isLoading} = useRemoteData(loadPublications);
     const handlePublicationLinkClick = (publicationLink: string) => (event: ReactMouseEvent<HTMLAnchorElement>) => {
@@ -18,6 +20,27 @@ export function PublicationsView() {
         event.preventDefault();
         void requestExternalNavigation(publicationLink);
     };
+
+    useEffect(() => {
+        const focusType = searchParams.get("focusType");
+        const focusId = searchParams.get("focusId");
+        if (focusType !== "publication" || !focusId || isLoading || error) {
+            return;
+        }
+
+        const target = document.getElementById(`publication-${focusId}`);
+        if (!target) {
+            return;
+        }
+
+        target.scrollIntoView({behavior: "smooth", block: "center"});
+        target.classList.add("search-focus-highlight");
+        const timeoutId = window.setTimeout(() => {
+            target.classList.remove("search-focus-highlight");
+        }, 3000);
+
+        return () => window.clearTimeout(timeoutId);
+    }, [searchParams, isLoading, error, data]);
 
     return BodyView(page(data, isLoading, error, handlePublicationLinkClick));
 }
@@ -48,10 +71,14 @@ function page(
                     <p className="remote-data-state">Публикации пока не найдены.</p>
                 )}
                 {publications?.map((publicationsByDate) => (
-                    <div id={publicationsByDate.date} key={publicationsByDate.date}>
+                    <div className="section-spacer" id={publicationsByDate.date} key={publicationsByDate.date}>
                         <h2>{publicationsByDate.date}</h2>
                         {publicationsByDate.publications.map((publication, index) => (
-                            <div className="publication" key={`${publicationsByDate.date}-${index}-${publication.theme}`}>
+                            <div
+                                className="publication"
+                                id={`publication-${publication.id}`}
+                                key={`${publicationsByDate.date}-${publication.id}-${index}`}
+                            >
                                 <div className="publication-authors-titles">
                                     {renderPublicationLink(publication, <p>{publication.authors}</p>, onPublicationLinkClick)}
                                     {renderPublicationLink(publication, <p>{publication.theme}</p>, onPublicationLinkClick)}

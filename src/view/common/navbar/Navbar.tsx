@@ -6,8 +6,10 @@ import type {SearchResultItem} from "../../../api/types";
 import {
     EXTERNAL_NAVIGATION_REQUEST_EVENT,
     openExternalUrlInNewTabWithCheck,
+    requestExternalNavigation,
     type ExternalNavigationRequestDetail
 } from "../../../utils/externalNavigation";
+import {rideConsoleUrl, rideSignupUrl} from "../../../utils/ridePortal";
 import {NavigationTree} from "../../../data/navbar/NavigationTree";
 import searchIcon from "../../../assets/home/icons/search.svg";
 import accountIcon from "../../../assets/home/icons/account.svg";
@@ -18,13 +20,21 @@ import caseTwoImage from "../../../assets/home/cases/case-2.png";
 
 type SearchState = "idle" | "loading" | "ready" | "error";
 type ProjectLeafItem = { slug: string, title: string };
+type SearchFilter = "all" | "publication" | "work";
+type TopLinkAction = "openRideSignup" | "openRideConsole";
+type TopLinkItem = {
+    label: string
+    icon?: string
+    to?: string
+    action?: TopLinkAction
+};
 
-const topLinks = [
-    {label: "Помочь проекту", href: "#support", icon: supportIcon},
-    {label: "Свяжитесь с нами", href: "#contacts"},
-    {label: "Poprog маркет", href: "#market"},
-    {label: "Поддержка", href: "#support"},
-    {label: "Мой аккаунт", href: "#account", icon: accountIcon}
+const topLinks: TopLinkItem[] = [
+    {label: "Помочь проекту", to: "/home#support", icon: supportIcon},
+    {label: "Свяжитесь с нами", to: "/home#contacts"},
+    {label: "Poprog маркет", to: "/projects"},
+    {label: "Поддержка", to: "/home#support"},
+    {label: "Мой аккаунт", action: "openRideSignup", icon: accountIcon}
 ];
 
 const projectsCategories = [
@@ -99,6 +109,30 @@ const mobileProjectsItemsByCategory: Record<string, ProjectLeafItem[]> = {
     ]
 };
 
+const projectItemDescriptions: Record<string, string> = {
+    "reflex": "Язык для разработки ПО микроконтроллеров во встраиваемых системах с использованием методик процесс-ориентированного программирования",
+    "post": "Процесс-ориентированное расширение языка Structured Text (ST) для программирования алгоритмически сложных управляющих программ для ПЛК",
+    "industrial-c": "Специализированный процесс-ориентированный язык программирования для промышленной автоматизации и систем реального времени",
+    "languages-whats-new": "Изучите новые возможности и передовые технологии",
+    "success-stories": "Узнайте, как технологии Poprog ускоряют переход предприятий в Индустрию 4.0",
+    "ride-overview": "Ознакомьтесь с возможностями облачной среды разработки RIDE для промышленных задач",
+    "ride-cloud-launch": "Запускайте проекты в облаке и работайте с командами в едином контуре",
+    "ride-debug": "Используйте инструменты отладки для ускорения диагностики и тестирования",
+    "ride-whats-new": "Новые релизы, функции и улучшения платформы RIDE",
+    "requirements": "Собирайте и структурируйте требования к промышленным системам разработки",
+    "traceability": "Настраивайте трассировку требований, реализации и результатов проверки",
+    "edtl-spec": "Работайте с EDTL-спецификациями как с исполняемыми моделями требований",
+    "edtl-whats-new": "Следите за обновлениями в инструментах инженерии требований",
+    "architecture-templates": "Используйте шаблоны архитектур для быстрых стартов распределенных систем",
+    "communication-modules": "Собирайте надежные контуры обмена с типовыми модулями связи",
+    "typical-solutions": "Применяйте проверенные практики для типовых промышленных сценариев",
+    "distributed-whats-new": "Новые материалы по распределенным микроконтроллерным системам",
+    "code-checks": "Проверяйте код заранее и находите дефекты до этапа внедрения",
+    "quality-metrics": "Отслеживайте метрики качества и стабильности ваших решений",
+    "analysis-reports": "Формируйте отчеты статического анализа для инженерных команд",
+    "analysis-whats-new": "Новые функции и подходы в инструментах анализа"
+};
+
 type MobileProjectsMenuStage = "root" | "groups" | "items";
 
 function getSearchResultTitle(item: SearchResultItem): string {
@@ -126,6 +160,19 @@ function getSearchResultTypeLabel(item: SearchResultItem): string {
     }
 
     return "Материал";
+}
+
+function matchesSearchFilter(item: SearchResultItem, filter: SearchFilter): boolean {
+    if (filter === "all") {
+        return true;
+    }
+
+    const normalizedType = item.type.toLowerCase();
+    if (filter === "publication") {
+        return normalizedType.includes("publication");
+    }
+
+    return normalizedType.includes("work") || normalizedType.includes("diploma") || normalizedType.includes("dissertation");
 }
 
 function getSearchResultFallbackTarget(item: SearchResultItem): string {
@@ -166,11 +213,36 @@ function getApiHostFromBaseUrl(): string {
     return apiBaseUrl;
 }
 
+function getProjectsPanelItemsByCategory(categoryKey: string): ProjectLeafItem[] {
+    const sourceItems = mobileProjectsItemsByCategory[categoryKey] ?? [];
+    const fallbackItems = mobileProjectsItemsByCategory.languages ?? [];
+    const itemsToUse = sourceItems.length > 0 ? [...sourceItems] : [...fallbackItems];
+
+    while (itemsToUse.length > 0 && itemsToUse.length < 5) {
+        itemsToUse.push(itemsToUse[itemsToUse.length - 1]);
+    }
+
+    return itemsToUse.slice(0, 5);
+}
+
+function getProjectItemDescription(item: ProjectLeafItem): string {
+    return projectItemDescriptions[item.slug] ?? `Откройте раздел «${item.title}» и изучите материалы по направлению.`;
+}
+
 function resolveSearchResultNavigation(item: SearchResultItem): { externalUrl?: string, internalPath: string } {
     const rawLink = item.link?.trim();
     const fallbackPath = getSearchResultFallbackTarget(item);
 
     if (!rawLink) {
+        if (typeof item.sourceId === "number" && Number.isFinite(item.sourceId)) {
+            const normalizedType = item.type.toLowerCase();
+            if (normalizedType.includes("publication")) {
+                return {internalPath: `/publications?focusType=publication&focusId=${item.sourceId}`};
+            }
+            if (normalizedType.includes("work") || normalizedType.includes("diploma") || normalizedType.includes("dissertation")) {
+                return {internalPath: `/works?focusType=student-work&focusId=${item.sourceId}`};
+            }
+        }
         return {internalPath: fallbackPath};
     }
 
@@ -190,6 +262,13 @@ function resolveSearchResultNavigation(item: SearchResultItem): { externalUrl?: 
 
     const apiHost = getApiHostFromBaseUrl().replace(/\/+$/, "");
     const normalizedLink = rawLink.replace(/^\/+/, "");
+    if (normalizedLink.startsWith("files/")) {
+        return {
+            externalUrl: `${apiHost}/api/${normalizedLink}`,
+            internalPath: fallbackPath
+        };
+    }
+
     return {
         externalUrl: `${apiHost}/${normalizedLink}`,
         internalPath: fallbackPath
@@ -207,6 +286,7 @@ export function Navbar() {
     const [searchState, setSearchState] = useState<SearchState>("idle");
     const [searchResults, setSearchResults] = useState<SearchResultItem[]>([]);
     const [searchError, setSearchError] = useState("");
+    const [searchFilter, setSearchFilter] = useState<SearchFilter>("all");
     const [externalNavigationRequest, setExternalNavigationRequest] = useState<ExternalNavigationRequestDetail | null>(null);
     const menuRef = useRef<HTMLDivElement | null>(null);
     const projectsPanelRef = useRef<HTMLDivElement | null>(null);
@@ -391,6 +471,8 @@ export function Navbar() {
     }, [isSearchOpen, trimmedQuery]);
 
     const searchResultContent = useMemo(() => {
+        const filteredResults = searchResults.filter((item) => matchesSearchFilter(item, searchFilter));
+
         if (trimmedQuery.length === 0) {
             return <p className="site-search-status">Введите запрос, чтобы найти публикации и студенческие работы.</p>;
         }
@@ -403,13 +485,13 @@ export function Navbar() {
             return <p className="site-search-status site-search-status-error">Не удалось выполнить поиск: {searchError}</p>;
         }
 
-        if (!Array.isArray(searchResults) || searchResults.length === 0) {
+        if (!Array.isArray(filteredResults) || filteredResults.length === 0) {
             return <p className="site-search-status">Ничего не найдено. Попробуйте изменить запрос.</p>;
         }
 
         return (
             <div className="site-search-results-list">
-                {searchResults.map((item, index) => (
+                {filteredResults.map((item, index) => (
                     <button
                         className="site-search-result-card"
                         key={`${item.type}-${item.id}-${item.sourceId ?? index}`}
@@ -426,7 +508,7 @@ export function Navbar() {
                 ))}
             </div>
         );
-    }, [searchError, searchResults, searchState, trimmedQuery]);
+    }, [searchError, searchFilter, searchResults, searchState, trimmedQuery]);
 
     const toggleSearch = () => {
         setIsMenuOpen(false);
@@ -434,9 +516,36 @@ export function Navbar() {
         setIsSearchOpen((isOpen) => !isOpen);
     };
 
+    const toggleSearchFilter = () => {
+        setSearchFilter((currentFilter) => {
+            if (currentFilter === "all") {
+                return "publication";
+            }
+            if (currentFilter === "publication") {
+                return "work";
+            }
+            return "all";
+        });
+    };
+
+    const openRideConsole = () => {
+        void requestExternalNavigation(rideConsoleUrl);
+    };
+
+    const openRideSignup = () => {
+        void requestExternalNavigation(rideSignupUrl);
+    };
+
     const activeProjectsCategory = projectsCategories[activeProjectsCategoryIndex] ?? projectsCategories[0];
     const mobileProjectsCategory = projectsCategories[mobileProjectsCategoryIndex] ?? projectsCategories[0];
     const mobileProjectsItems = mobileProjectsItemsByCategory[mobileProjectsCategory.key] ?? [];
+    const projectsPanelItems = getProjectsPanelItemsByCategory(activeProjectsCategory.key);
+    const featureProjectItem = projectsPanelItems[0];
+    const plainProjectItemOne = projectsPanelItems[1];
+    const plainProjectItemTwo = projectsPanelItems[2];
+    const newsProjectItem = projectsPanelItems[3];
+    const successProjectItem = projectsPanelItems[4];
+    const isProjectsRouteActive = location.pathname.startsWith("/projects");
 
     const closeProjectsPanel = () => {
         setIsProjectsPanelOpen(false);
@@ -454,17 +563,43 @@ export function Navbar() {
         });
     };
 
+    const renderTopLink = (link: TopLinkItem, key: string, className: string) => {
+        const content = (
+            <>
+                <span>{link.label}</span>
+                {link.icon && <img alt="" aria-hidden="true" src={link.icon}/>}
+            </>
+        );
+
+        if (link.action === "openRideSignup") {
+            return (
+                <button className={className} key={key} onClick={openRideSignup} type="button">
+                    {content}
+                </button>
+            );
+        }
+
+        if (link.action === "openRideConsole") {
+            return (
+                <button className={className} key={key} onClick={openRideConsole} type="button">
+                    {content}
+                </button>
+            );
+        }
+
+        return (
+            <Link className={className} key={key} to={link.to ?? "/home"}>
+                {content}
+            </Link>
+        );
+    };
+
     return (
         <header className={`site-header${isSearchOpen ? " site-header-search-open" : ""}${isProjectsPanelOpen ? " site-header-projects-open" : ""}`}>
             <div className="site-header-stack">
                 <div className="site-header-top">
                     <div className="site-header-top-links">
-                        {topLinks.map((link) => (
-                            <a className="site-header-top-link" href={link.href} key={link.label}>
-                                <span>{link.label}</span>
-                                {link.icon && <img alt="" aria-hidden="true" src={link.icon}/>}
-                            </a>
-                        ))}
+                        {topLinks.map((link) => renderTopLink(link, link.label, "site-header-top-link"))}
                     </div>
                 </div>
 
@@ -478,7 +613,7 @@ export function Navbar() {
                                     path === "/projects" ? (
                                         <button
                                             aria-expanded={isProjectsPanelOpen}
-                                            className={`site-navigation-link${isProjectsPanelOpen || location.pathname === path ? " site-navigation-link-active" : ""}`}
+                                            className={`site-navigation-link${isProjectsRouteActive ? " site-navigation-link-active" : ""}`}
                                             key={path}
                                             onClick={() => {
                                                 setIsSearchOpen(false);
@@ -557,10 +692,10 @@ export function Navbar() {
                                     <div className="site-navigation-dropdown-actions">
                                         <div className="site-navigation-dropdown-divider"/>
 
-                                        <button className="site-navigation-link site-navigation-dropdown-link" type="button">
+                                        <button className="site-navigation-link site-navigation-dropdown-link" onClick={openRideConsole} type="button">
                                             Вход в консоль
                                         </button>
-                                        <button className="site-navigation-link site-navigation-dropdown-link" type="button">
+                                        <button className="site-navigation-link site-navigation-dropdown-link" onClick={openRideSignup} type="button">
                                             Создать аккаунт
                                         </button>
                                     </div>
@@ -573,9 +708,9 @@ export function Navbar() {
                                 <img alt="" aria-hidden="true" src={searchIcon}/>
                                 <span>Поиск</span>
                             </button>
-                            <button className="site-console-button" type="button">Вход в консоль</button>
-                            <button className="site-account-button" type="button">Создать аккаунт</button>
-                            <button className="site-mobile-account-button" type="button">
+                            <button className="site-console-button" onClick={openRideConsole} type="button">Вход в консоль</button>
+                            <button className="site-account-button" onClick={openRideSignup} type="button">Создать аккаунт</button>
+                            <button className="site-mobile-account-button" onClick={openRideSignup} type="button">
                                 <img alt="" aria-hidden="true" src={accountIcon}/>
                             </button>
                         </div>
@@ -609,50 +744,50 @@ export function Navbar() {
                             <section className="site-projects-panel-content">
                                 <h3>{activeProjectsCategory.title}</h3>
                                 <p>{activeProjectsCategory.description}</p>
-                                <Link className="site-projects-panel-center-link" onClick={closeProjectsPanel} to="/home">
+                                <Link className="site-projects-panel-center-link" onClick={closeProjectsPanel} to={`/projects/${featureProjectItem.slug}`}>
                                     {activeProjectsCategory.centerLinkLabel}
                                 </Link>
 
                                 <div className="site-projects-panel-top-row">
-                                    <Link className="site-projects-feature-card site-projects-hover-card" onClick={closeProjectsPanel} to="/home">
+                                    <Link className="site-projects-feature-card site-projects-hover-card" onClick={closeProjectsPanel} to={`/projects/${featureProjectItem.slug}`}>
                                         <div className="site-projects-feature-copy">
-                                            <strong>Reflex</strong>
-                                            <span>Язык для разработки ПО микроконтроллеров во встраиваемых системах с использованием методик процесс-ориентированного программирования</span>
+                                            <strong>{featureProjectItem.title}</strong>
+                                            <span>{getProjectItemDescription(featureProjectItem)}</span>
                                         </div>
                                         <img alt="" aria-hidden="true" className="site-projects-card-arrow" src={arrowRightAltIcon}/>
                                     </Link>
 
-                                    <article className="site-projects-plain-card site-projects-hover-card">
-                                        <strong>poST</strong>
-                                        <span>Процесс-ориентированное расширение языка Structured Text (ST) для программирования алгоритмически сложных управляющих программ для ПЛК</span>
+                                    <Link className="site-projects-plain-card site-projects-hover-card" onClick={closeProjectsPanel} to={`/projects/${plainProjectItemOne.slug}`}>
+                                        <strong>{plainProjectItemOne.title}</strong>
+                                        <span>{getProjectItemDescription(plainProjectItemOne)}</span>
                                         <img alt="" aria-hidden="true" className="site-projects-card-arrow" src={arrowRightAltIcon}/>
-                                    </article>
+                                    </Link>
 
-                                    <article className="site-projects-plain-card site-projects-hover-card">
-                                        <strong>IndustrialC</strong>
-                                        <span>Специализированный процесс-ориентированный язык программирования для задач промышленной автоматизации и систем реального времени с синтаксисом, похожим на Cи</span>
+                                    <Link className="site-projects-plain-card site-projects-hover-card" onClick={closeProjectsPanel} to={`/projects/${plainProjectItemTwo.slug}`}>
+                                        <strong>{plainProjectItemTwo.title}</strong>
+                                        <span>{getProjectItemDescription(plainProjectItemTwo)}</span>
                                         <img alt="" aria-hidden="true" className="site-projects-card-arrow" src={arrowRightAltIcon}/>
-                                    </article>
+                                    </Link>
                                 </div>
 
                                 <div className="site-projects-panel-bottom-row">
-                                    <Link className="site-projects-news-card site-projects-hover-card" onClick={closeProjectsPanel} to="/home">
+                                    <Link className="site-projects-news-card site-projects-hover-card" onClick={closeProjectsPanel} to={`/projects/${newsProjectItem.slug}`}>
                                         <img alt="" className="site-projects-news-image" src={caseOneImage}/>
                                         <div className="site-projects-news-copy">
-                                            <strong>Что нового?</strong>
-                                            <span>Изучите новые возможности и передовые технологии</span>
+                                            <strong>{newsProjectItem.title}</strong>
+                                            <span>{getProjectItemDescription(newsProjectItem)}</span>
                                         </div>
                                         <img alt="" aria-hidden="true" className="site-projects-card-arrow" src={arrowRightAltIcon}/>
                                     </Link>
 
-                                    <article className="site-projects-success-card site-projects-hover-card">
+                                    <Link className="site-projects-success-card site-projects-hover-card" onClick={closeProjectsPanel} to={`/projects/${successProjectItem.slug}`}>
                                         <img alt="" className="site-projects-success-image" src={caseTwoImage}/>
                                         <div className="site-projects-success-copy">
-                                            <strong>Истории успеха наших пользователей</strong>
-                                            <span>Узнайте, как технологии Poprog ускоряют переход предприятий в Индустрию 4.0</span>
+                                            <strong>{successProjectItem.title}</strong>
+                                            <span>{getProjectItemDescription(successProjectItem)}</span>
                                         </div>
                                         <img alt="" aria-hidden="true" className="site-projects-card-arrow" src={arrowRightAltIcon}/>
-                                    </article>
+                                    </Link>
                                 </div>
                             </section>
                         </div>
@@ -663,10 +798,7 @@ export function Navbar() {
                     <div className="site-header-main-menu">
                         <div className="site-header-main-menu-top-links">
                             {topLinks.map((link) => (
-                                <a className="site-header-main-menu-top-link" href={link.href} key={`mobile-inline-${link.label}`}>
-                                    <span>{link.label}</span>
-                                    {link.icon && <img alt="" aria-hidden="true" src={link.icon}/>}
-                                </a>
+                                renderTopLink(link, `mobile-inline-link-${link.label}`, "site-header-main-menu-top-link")
                             ))}
                         </div>
 
@@ -758,10 +890,10 @@ export function Navbar() {
                                         <img alt="" aria-hidden="true" src={searchIcon}/>
                                         <span>Поиск</span>
                                     </button>
-                                    <button className="site-navigation-link site-navigation-dropdown-link" type="button">
+                                    <button className="site-navigation-link site-navigation-dropdown-link" onClick={openRideConsole} type="button">
                                         Вход в консоль
                                     </button>
-                                    <button className="site-navigation-link site-navigation-dropdown-link" type="button">
+                                    <button className="site-navigation-link site-navigation-dropdown-link" onClick={openRideSignup} type="button">
                                         Создать аккаунт
                                     </button>
                                 </div>
@@ -796,13 +928,13 @@ export function Navbar() {
                                     )}
                                 </label>
 
-                                <button className="site-search-filter-button" type="button">
+                                <button className="site-search-filter-button" onClick={toggleSearchFilter} type="button">
                                     <span aria-hidden="true" className="site-search-filter-icon">
                                         <span/>
                                         <span/>
                                         <span/>
                                     </span>
-                                    <span>Фильтр</span>
+                                    <span>Фильтр: {searchFilter === "all" ? "Все" : searchFilter === "publication" ? "Публикации" : "Работы"}</span>
                                 </button>
                             </div>
 

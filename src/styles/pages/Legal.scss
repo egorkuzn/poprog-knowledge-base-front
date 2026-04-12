@@ -1,0 +1,39 @@
+.legal-page {
+  padding: 32px 24px 56px;
+}
+
+.legal-page-content {
+  max-width: 860px;
+  margin: 0 auto;
+  display: grid;
+  gap: 18px;
+}
+
+.legal-page-content h1 {
+  margin: 0;
+  font-size: clamp(30px, 4.2vw, 44px);
+  line-height: 1.08;
+  letter-spacing: -0.02em;
+  color: #151515;
+}
+
+.legal-page-content p {
+  margin: 0;
+  font-size: 17px;
+  line-height: 1.6;
+  color: #2f2f2f;
+}
+
+@media (max-width: 720px) {
+  .legal-page {
+    padding: 18px 16px 36px;
+  }
+
+  .legal-page-content {
+    gap: 14px;
+  }
+
+  .legal-page-content p {
+    font-size: 16px;
+  }
+}
