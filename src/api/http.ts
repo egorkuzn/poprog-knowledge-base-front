@@ -89,3 +89,19 @@ export async function putJson<TResponse, TRequest>(path: string, body: TRequest)
         body: JSON.stringify(body)
     });
 }
+
+export async function deleteJson(path: string): Promise<void> {
+    const response = await fetch(buildUrl(path), {
+        method: "DELETE",
+        headers: {
+            Accept: "application/json",
+            ...getDebugAuthHeaders()
+        }
+    });
+
+    if (!response.ok) {
+        const errorText = await response.text();
+        const details = errorText ? `: ${errorText}` : "";
+        throw new Error(`Request failed with status ${response.status}${details}`);
+    }
+}

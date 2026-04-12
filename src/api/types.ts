@@ -95,3 +95,54 @@ export interface UpdateAccountProfileRequest {
     name: string
     email: string
 }
+
+export interface AccountChatSummaryResponse {
+    chatId: string
+    createdAt: string
+    messageCount: number
+    lastMessagePreview: string | null
+}
+
+export interface AccountFavoriteResponse {
+    id: number
+    itemType: string
+    itemId: string
+    title: string
+    link: string | null
+    createdAt: string
+}
+
+export interface UpsertFavoriteRequest {
+    itemType: string
+    itemId: string
+    title: string
+    link?: string
+}
+
+export interface AccountDonationResponse {
+    id: string
+    amount: string
+    currency: string
+    status: string
+    source: string | null
+    message: string | null
+    providerPaymentId: string | null
+    confirmationUrl: string | null
+    returnUrl: string
+    createdAt: string
+    updatedAt: string
+    paidAt: string | null
+}
+
+export interface CreateDonationRequest {
+    amount: number
+    currency: string
+    source?: string
+    message?: string
+    returnUrl: string
+}
+
+export interface UpdateDonationStatusRequest {
+    status: "PENDING" | "SUCCEEDED" | "CANCELED"
+    providerPaymentId?: string
+}
