@@ -1,3 +1,5 @@
+import {trackMetricEvent} from "./analytics";
+
 const updaterMarkup = `
 <!doctype html>
 <html lang="ru">
@@ -104,6 +106,10 @@ export async function openExternalUrlInNewTabWithCheck(targetUrl: string, option
     if (!openedTab) {
         return;
     }
+
+    trackMetricEvent("external_link_click", {
+        targetUrl: resolvedTarget
+    });
 
     const notFound = await isConfirmedNotFound(resolvedTarget);
     openUrlInTab(notFound ? notFoundUrl : resolvedTarget, openedTab);

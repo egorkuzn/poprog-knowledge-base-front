@@ -31,6 +31,104 @@
   color: #ab1f1f;
 }
 
+.account-auth-shell {
+  display: grid;
+  gap: 14px;
+}
+
+.account-auth-card {
+  margin: 0 0 14px;
+  width: 100%;
+  padding: 16px 18px;
+  border-radius: 16px;
+  border: 1px solid #dee3ef;
+  background: #ffffff;
+  max-width: none;
+  box-sizing: border-box;
+}
+
+.account-auth-tabs {
+  display: inline-flex;
+  border-radius: 999px;
+  border: 1px solid #dbe1ee;
+  padding: 4px;
+  gap: 4px;
+  margin-bottom: 14px;
+}
+
+.account-auth-tab {
+  border: 0;
+  border-radius: 999px;
+  min-height: 36px;
+  padding: 0 14px;
+  background: transparent;
+  color: #33405f;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.account-auth-tab-active {
+  background: #1d3c92;
+  color: #ffffff;
+}
+
+.account-auth-form {
+  display: grid;
+  gap: 10px;
+}
+
+.account-auth-form label {
+  display: grid;
+  gap: 6px;
+  font-weight: 600;
+  color: #364161;
+}
+
+.account-auth-form input {
+  min-height: 42px;
+  border-radius: 10px;
+  border: 1px solid #ced6e6;
+  padding: 0 12px;
+}
+
+.account-auth-form select {
+  min-height: 42px;
+  border-radius: 10px;
+  border: 1px solid #ced6e6;
+  padding: 0 12px;
+  background: #ffffff;
+}
+
+.account-auth-submit {
+  margin-top: 4px;
+  min-height: 42px;
+  border: 0;
+  border-radius: 999px;
+  background: #153b9d;
+  color: #ffffff;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.account-auth-error {
+  margin: 0;
+  color: #ab1f1f;
+}
+
+.account-auth-note {
+  margin: 12px 0 0;
+  color: #5e6575;
+}
+
+.account-auth-note a {
+  color: #153b9d;
+}
+
+.account-inline-link {
+  color: #153b9d;
+  font-weight: 700;
+}
+
 .account-card {
   margin: 0 0 14px;
   padding: 16px 18px;
@@ -96,6 +194,107 @@
   gap: 8px;
 }
 
+.account-list-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.account-list-item button {
+  border: 0;
+  border-radius: 999px;
+  min-height: 34px;
+  padding: 0 12px;
+  background: #eef3ff;
+  color: #153b9d;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.account-admin-filters {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(3, minmax(180px, 1fr));
+}
+
+.account-admin-filters label {
+  display: grid;
+  gap: 6px;
+  font-weight: 600;
+  color: #364161;
+}
+
+.account-admin-filters input,
+.account-admin-filters select {
+  min-height: 42px;
+  border-radius: 10px;
+  border: 1px solid #ced6e6;
+  padding: 0 12px;
+  background: #ffffff;
+}
+
+.account-admin-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(180px, 1fr));
+  gap: 14px;
+  margin-bottom: 14px;
+}
+
+.account-admin-kpi-value {
+  margin: 0;
+  font-size: clamp(1.6rem, 2vw, 2rem);
+  font-weight: 800;
+  color: #153b9d;
+}
+
+.account-admin-table-wrap {
+  overflow-x: auto;
+}
+
+.account-admin-table {
+  width: 100%;
+  min-width: 760px;
+  border-collapse: collapse;
+}
+
+.account-admin-table th,
+.account-admin-table td {
+  border-bottom: 1px solid #e5eaf3;
+  padding: 10px 12px;
+  text-align: left;
+  vertical-align: top;
+}
+
+.account-admin-table th {
+  color: #45506f;
+  font-size: 0.9rem;
+}
+
+.account-admin-pagination {
+  margin-top: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.account-admin-pagination button {
+  border: 0;
+  border-radius: 999px;
+  min-height: 36px;
+  padding: 0 14px;
+  background: #153b9d;
+  color: #ffffff;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.account-admin-pagination button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
 @media (max-width: 720px) {
   .account-page {
     padding: 10px 10px 32px;
@@ -103,6 +302,10 @@
 
   .account-wide-grid {
     grid-template-columns: 1fr;
+  }
+
+  .account-auth-card {
+    max-width: none;
   }
 
   .account-card-full {
@@ -121,5 +324,20 @@
   .account-card-actions {
     width: 100%;
     justify-content: flex-start;
+  }
+
+  .account-list-item {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .account-admin-filters,
+  .account-admin-kpi-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .account-admin-pagination {
+    align-items: flex-start;
+    flex-direction: column;
   }
 }

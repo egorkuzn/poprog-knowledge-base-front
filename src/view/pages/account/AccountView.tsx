@@ -1,8 +1,12 @@
-import {useEffect, useState} from "react";
+import {useEffect, useMemo, useState} from "react";
+import type {FormEvent} from "react";
+import {Link, useLocation, useNavigate} from "react-router-dom";
 import BodyView from "../BodyView";
 import {Breadcrumbs} from "../../common/navigation/Breadcrumbs";
 import {
     createDonation,
+    downloadAccountDonationsCsv,
+    downloadAccountDonationsPdf,
     getAccountChats,
     getAccountProfile,
     getDonations,
@@ -14,23 +18,73 @@ import type {
     AccountFavoriteResponse,
     AccountProfileResponse
 } from "../../../api/types";
+import {
+    clearLocalAuthSession,
+    createLocalAuthSession,
+    readLocalAuthSession,
+    saveLocalAuthSession,
+    type AuthMode,
+    type LocalAuthSession
+} from "../../../utils/localAuth";
 import "../../../styles/pages/Account.scss";
 
 const serviceRoles = new Set(["ADMIN", "MODERATOR", "SUPPORT", "DEVOPS", "PM", "EDITOR"]);
+const localRoleOptions = ["USER", "ADMIN", "SUPPORT", "PM", "DEVOPS"];
+
+function buildProfileFromSession(session: LocalAuthSession): AccountProfileResponse {
+    return {
+        subject: session.subject,
+        name: session.name,
+        email: session.email,
+        roles: session.roles
+    };
+}
+
+function getAuthModeFromSearch(search: string): AuthMode {
+    const params = new URLSearchParams(search);
+    return params.get("mode") === "register" ? "register" : "login";
+}
 
 export function AccountView() {
-    const [profile, setProfile] = useState<AccountProfileResponse | null>(null);
+    const location = useLocation();
+    const navigate = useNavigate();
+    const [authMode, setAuthMode] = useState<AuthMode>(() => getAuthModeFromSearch(location.search));
+    const [authName, setAuthName] = useState("");
+    const [authEmail, setAuthEmail] = useState("");
+    const [authPassword, setAuthPassword] = useState("");
+    const [authRole, setAuthRole] = useState("USER");
+    const [authError, setAuthError] = useState("");
+    const [profile, setProfile] = useState<AccountProfileResponse | null>(() => {
+        const existingSession = readLocalAuthSession();
+        return existingSession ? buildProfileFromSession(existingSession) : null;
+    });
     const [chats, setChats] = useState<AccountChatSummaryResponse[]>([]);
     const [favorites, setFavorites] = useState<AccountFavoriteResponse[]>([]);
     const [donations, setDonations] = useState<AccountDonationResponse[]>([]);
-    const [isLoading, setIsLoading] = useState(true);
+    const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState("");
     const [isCreatingDonation, setIsCreatingDonation] = useState(false);
 
     const hasServiceRole = (profile?.roles ?? []).some((role) => serviceRoles.has(role.toUpperCase()));
+    const profileSubject = profile?.subject ?? "";
+    const isLocalRoleDebugVisible = typeof window !== "undefined"
+        && ["localhost", "127.0.0.1"].includes(window.location.hostname);
 
     useEffect(() => {
+        setAuthMode(getAuthModeFromSearch(location.search));
+    }, [location.search]);
+
+    useEffect(() => {
+        if (!profileSubject) {
+            setChats([]);
+            setFavorites([]);
+            setDonations([]);
+            return;
+        }
+
         let isMounted = true;
+        setIsLoading(true);
+        setError("");
 
         Promise.all([
             getAccountProfile(),
@@ -53,7 +107,7 @@ export function AccountView() {
                     return;
                 }
 
-                setError(loadError instanceof Error ? loadError.message : "Не удалось загрузить личный кабинет.");
+                setError(loadError instanceof Error ? loadError.message : "Не удалось загрузить данные кабинета.");
             })
             .finally(() => {
                 if (isMounted) {
@@ -64,10 +118,64 @@ export function AccountView() {
         return () => {
             isMounted = false;
         };
-    }, []);
+    }, [profileSubject]);
 
-    const handleCreateDonation = async () => {
-        if (isCreatingDonation) {
+    const authHint = useMemo(() => (
+        authMode === "register"
+            ? "Создайте аккаунт в интерфейсе Poprog, чтобы сохранять избранное и историю операций."
+            : "Войдите в аккаунт Poprog, чтобы открыть личный кабинет без внешнего редиректа."
+    ), [authMode]);
+
+    const switchAuthMode = (mode: AuthMode) => {
+        setAuthMode(mode);
+        setAuthError("");
+        navigate(`/account?mode=${mode}`, {replace: true});
+    };
+
+    const handleAuthSubmit = (event: FormEvent<HTMLFormElement>) => {
+        event.preventDefault();
+        setAuthError("");
+
+        const normalizedName = authName.trim();
+        const normalizedEmail = authEmail.trim();
+
+        if (normalizedName.length < 2) {
+            setAuthError("Введите имя не короче 2 символов.");
+            return;
+        }
+
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)) {
+            setAuthError("Введите корректный email.");
+            return;
+        }
+
+        if (authPassword.trim().length < 8) {
+            setAuthError("Пароль должен содержать минимум 8 символов.");
+            return;
+        }
+
+        const session = createLocalAuthSession(
+            normalizedName,
+            normalizedEmail,
+            authMode,
+            isLocalRoleDebugVisible ? [authRole] : ["USER"]
+        );
+        saveLocalAuthSession(session);
+        setProfile(buildProfileFromSession(session));
+        setAuthPassword("");
+        navigate("/account", {replace: true});
+    };
+
+    const handleLogout = () => {
+        clearLocalAuthSession();
+        setProfile(null);
+        setError("");
+        setAuthPassword("");
+        navigate("/account?mode=login", {replace: true});
+    };
+
+    const handleCreateDonation = async (template?: AccountDonationResponse) => {
+        if (isCreatingDonation || !profile) {
             return;
         }
 
@@ -76,11 +184,11 @@ export function AccountView() {
 
         try {
             const donation = await createDonation({
-                amount: 300,
-                currency: "RUB",
-                source: "account-support",
-                message: "Поддержка проекта",
-                returnUrl: `${window.location.origin}/home#support`
+                amount: Number(template?.amount ?? 300),
+                currency: template?.currency ?? "RUB",
+                source: template?.source ?? "account-support",
+                message: template?.message ?? `Поддержка проекта от ${profile.email}`,
+                returnUrl: `${window.location.origin}/account`
             });
 
             setDonations((current) => [donation, ...current]);
@@ -94,105 +202,138 @@ export function AccountView() {
         }
     };
 
-    const exportDonationsCsv = () => {
+    const exportDonationsCsv = async () => {
         if (donations.length === 0) {
             setError("Нет данных для выгрузки.");
             return;
         }
-
-        const header = ["id", "amount", "currency", "status", "source", "message", "createdAt"];
-        const rows = donations.map((item) => [
-            item.id,
-            item.amount,
-            item.currency,
-            item.status,
-            item.source ?? "",
-            (item.message ?? "").replace(/\n/g, " ").trim(),
-            item.createdAt
-        ]);
-
-        const csvContent = [header, ...rows]
-            .map((row) => row.map((value) => `"${String(value).replace(/"/g, "\"\"")}"`).join(","))
-            .join("\n");
-
-        const blob = new Blob([`\uFEFF${csvContent}`], {type: "text/csv;charset=utf-8;"});
-        const url = URL.createObjectURL(blob);
-        const anchor = document.createElement("a");
-        anchor.href = url;
-        anchor.download = `donations-${new Date().toISOString().slice(0, 10)}.csv`;
-        document.body.appendChild(anchor);
-        anchor.click();
-        document.body.removeChild(anchor);
-        URL.revokeObjectURL(url);
+        setError("");
+        try {
+            await downloadAccountDonationsCsv();
+        } catch (exportError) {
+            setError(exportError instanceof Error ? exportError.message : "Не удалось выгрузить CSV.");
+        }
     };
 
-    const exportDonationsPdf = () => {
+    const exportDonationsPdf = async () => {
         if (donations.length === 0) {
             setError("Нет данных для выгрузки.");
             return;
         }
-
-        const win = window.open("", "_blank");
-        if (!win) {
-            setError("Не удалось открыть окно для печати PDF.");
-            return;
+        setError("");
+        try {
+            await downloadAccountDonationsPdf();
+        } catch (exportError) {
+            setError(exportError instanceof Error ? exportError.message : "Не удалось выгрузить PDF.");
         }
-
-        const rows = donations
-            .map((item) =>
-                `<tr>
-                    <td>${item.id}</td>
-                    <td>${item.amount} ${item.currency}</td>
-                    <td>${item.status}</td>
-                    <td>${new Date(item.createdAt).toLocaleString()}</td>
-                </tr>`
-            )
-            .join("");
-
-        win.document.write(`
-            <html lang="ru">
-              <head>
-                <title>История операций</title>
-                <style>
-                  body { font-family: Arial, sans-serif; padding: 20px; }
-                  h1 { margin-top: 0; }
-                  table { border-collapse: collapse; width: 100%; }
-                  th, td { border: 1px solid #ccc; padding: 8px; text-align: left; font-size: 12px; }
-                  th { background: #f3f3f3; }
-                </style>
-              </head>
-              <body>
-                <h1>История операций (донаты)</h1>
-                <table>
-                  <thead>
-                    <tr><th>ID</th><th>Сумма</th><th>Статус</th><th>Дата</th></tr>
-                  </thead>
-                  <tbody>${rows}</tbody>
-                </table>
-              </body>
-            </html>
-        `);
-        win.document.close();
-        win.focus();
-        win.print();
     };
 
     return BodyView(
         <main className="account-page">
             <Breadcrumbs items={[{label: "Главная", to: "/home"}, {label: "Мой аккаунт"}]}/>
 
-            <section className="account-hero">
-                <h1>Личный кабинет</h1>
-                <p>Вы вошли в тестовый профиль. Данные можно использовать для отладки интеграций.</p>
-            </section>
+            {!profile && (
+                <section className="account-auth-shell">
+                    <header className="account-hero">
+                        <h1>Вход в личный кабинет</h1>
+                        <p>{authHint}</p>
+                    </header>
 
-            {isLoading && <p className="account-state">Загружаем личный кабинет...</p>}
-            {error.length > 0 && <p className="account-state account-state-error">{error}</p>}
+                    <div className="account-auth-card">
+                        <div className="account-auth-tabs">
+                            <button
+                                className={authMode === "login" ? "account-auth-tab account-auth-tab-active" : "account-auth-tab"}
+                                onClick={() => switchAuthMode("login")}
+                                type="button"
+                            >
+                                Вход
+                            </button>
+                            <button
+                                className={authMode === "register" ? "account-auth-tab account-auth-tab-active" : "account-auth-tab"}
+                                onClick={() => switchAuthMode("register")}
+                                type="button"
+                            >
+                                Регистрация
+                            </button>
+                        </div>
 
-            {!isLoading && !error && profile && (
+                        <form className="account-auth-form" onSubmit={handleAuthSubmit}>
+                            <label>
+                                Имя
+                                <input
+                                    autoComplete="name"
+                                    onChange={(event) => setAuthName(event.target.value)}
+                                    placeholder="Иван Петров"
+                                    type="text"
+                                    value={authName}
+                                />
+                            </label>
+                            <label>
+                                Email
+                                <input
+                                    autoComplete="email"
+                                    onChange={(event) => setAuthEmail(event.target.value)}
+                                    placeholder="you@example.com"
+                                    type="email"
+                                    value={authEmail}
+                                />
+                            </label>
+                            <label>
+                                Пароль
+                                <input
+                                    autoComplete={authMode === "register" ? "new-password" : "current-password"}
+                                    onChange={(event) => setAuthPassword(event.target.value)}
+                                    placeholder="Минимум 8 символов"
+                                    type="password"
+                                    value={authPassword}
+                                />
+                            </label>
+
+                            {isLocalRoleDebugVisible && (
+                                <label>
+                                    Служебная роль для локальной отладки
+                                    <select onChange={(event) => setAuthRole(event.target.value)} value={authRole}>
+                                        {localRoleOptions.map((role) => (
+                                            <option key={role} value={role}>{role}</option>
+                                        ))}
+                                    </select>
+                                </label>
+                            )}
+
+                            {authError.length > 0 && <p className="account-auth-error">{authError}</p>}
+
+                            <button className="account-auth-submit" type="submit">
+                                {authMode === "register" ? "Создать аккаунт" : "Войти"}
+                            </button>
+                        </form>
+
+                        <p className="account-auth-note">
+                            После входа вы сможете управлять историей донатов, сохранять избранные материалы и переходить в чаты.
+                            <Link to="/donate"> Поддержать проект</Link>
+                        </p>
+                    </div>
+                </section>
+            )}
+
+            {profile && (
                 <>
+                    <section className="account-hero">
+                        <h1>Личный кабинет</h1>
+                        <p>Вы вошли под {profile.email}. Все действия выполняются внутри интерфейса Poprog.</p>
+                    </section>
+
                     <section className="account-card">
-                        <h2>Профиль</h2>
+                        <div className="account-card-header">
+                            <h2>Профиль</h2>
+                            <div className="account-card-actions">
+                                {hasServiceRole && (
+                                    <button onClick={() => navigate("/account/admin/donations")} type="button">
+                                        Админ-донаты
+                                    </button>
+                                )}
+                                <button onClick={handleLogout} type="button">Выйти</button>
+                            </div>
+                        </div>
                         <div className="account-grid">
                             <div><strong>Subject:</strong> {profile.subject}</div>
                             <div><strong>Имя:</strong> {profile.name}</div>
@@ -201,12 +342,15 @@ export function AccountView() {
                         </div>
                     </section>
 
+                    {isLoading && <p className="account-state">Загружаем данные кабинета...</p>}
+                    {error.length > 0 && <p className="account-state account-state-error">{error}</p>}
+
                     <div className="account-wide-grid">
                         <section className="account-card">
                             <div className="account-card-header">
                                 <h2>Донаты</h2>
                                 <div className="account-card-actions">
-                                    <button disabled={isCreatingDonation} onClick={handleCreateDonation} type="button">
+                                    <button disabled={isCreatingDonation} onClick={() => void handleCreateDonation()} type="button">
                                         {isCreatingDonation ? "Создаём..." : "Поддержать проект (300 ₽)"}
                                     </button>
                                     <button onClick={exportDonationsCsv} type="button">Экспорт CSV</button>
@@ -216,8 +360,11 @@ export function AccountView() {
                             {donations.length === 0 ? <p>Пожертвований пока нет.</p> : (
                                 <ul className="account-list">
                                     {donations.map((item) => (
-                                        <li key={item.id}>
-                                            <strong>{item.amount} {item.currency}</strong> · {item.status} · {new Date(item.createdAt).toLocaleString()}
+                                        <li className="account-list-item" key={item.id}>
+                                            <div>
+                                                <strong>{item.amount} {item.currency}</strong> · {item.status} · {new Date(item.createdAt).toLocaleString()}
+                                            </div>
+                                            <button onClick={() => void handleCreateDonation(item)} type="button">Повторить донат</button>
                                         </li>
                                     ))}
                                 </ul>

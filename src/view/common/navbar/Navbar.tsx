@@ -7,10 +7,9 @@ import type {SearchResultItem} from "../../../api/types";
 import {
     EXTERNAL_NAVIGATION_REQUEST_EVENT,
     openExternalUrlInNewTabWithCheck,
-    requestExternalNavigation,
     type ExternalNavigationRequestDetail
 } from "../../../utils/externalNavigation";
-import {rideConsoleUrl, rideSignupUrl} from "../../../utils/ridePortal";
+import {normalizeSourceType, trackMetricEvent} from "../../../utils/analytics";
 import {NavigationTree} from "../../../data/navbar/NavigationTree";
 import searchIcon from "../../../assets/home/icons/search.svg";
 import accountIcon from "../../../assets/home/icons/account.svg";
@@ -22,7 +21,7 @@ import caseTwoImage from "../../../assets/home/cases/case-2.png";
 type SearchState = "idle" | "loading" | "ready" | "error";
 type ProjectLeafItem = { slug: string, title: string };
 type SearchFilter = "all" | "publication" | "work";
-type TopLinkAction = "openRideSignup" | "openRideConsole" | "openAccount";
+type TopLinkAction = "openAccount";
 type TopLinkItem = {
     label: string
     icon?: string
@@ -293,6 +292,7 @@ export function Navbar() {
     const projectsPanelRef = useRef<HTMLDivElement | null>(null);
     const inputRef = useRef<HTMLInputElement | null>(null);
     const requestIdRef = useRef(0);
+    const searchQueryIdRef = useRef<string | null>(null);
     const location = useLocation();
     const navigate = useNavigate();
     const trimmedQuery = searchQuery.trim();
@@ -339,6 +339,7 @@ export function Navbar() {
             setIsMenuOpen(false);
             setIsProjectsPanelOpen(false);
             setIsSearchOpen(true);
+            trackMetricEvent("search_open");
         };
 
         const handleExternalNavigationRequest = (event: Event) => {
@@ -439,12 +440,21 @@ export function Navbar() {
             setSearchState("idle");
             setSearchResults([]);
             setSearchError("");
+            searchQueryIdRef.current = null;
             return;
         }
 
         const currentRequestId = ++requestIdRef.current;
+        const queryId = typeof crypto !== "undefined" && "randomUUID" in crypto
+            ? crypto.randomUUID()
+            : `query-${Date.now()}`;
+        searchQueryIdRef.current = queryId;
         setSearchState("loading");
         setSearchError("");
+        trackMetricEvent("search_query_submitted", {
+            queryId,
+            query: trimmedQuery
+        });
 
         const timeoutId = window.setTimeout(async () => {
             try {
@@ -454,8 +464,19 @@ export function Navbar() {
                     return;
                 }
 
-                setSearchResults(Array.isArray(response.items) ? response.items : []);
+                const items = Array.isArray(response.items) ? response.items : [];
+                const publicationCount = items.filter((item) => normalizeSourceType(item.type) === "publication").length;
+                const studentWorkCount = items.filter((item) => normalizeSourceType(item.type) === "student-work").length;
+
+                setSearchResults(items);
                 setSearchState("ready");
+                trackMetricEvent("search_result_shown", {
+                    queryId,
+                    query: trimmedQuery,
+                    total: items.length,
+                    publicationCount,
+                    studentWorkCount
+                });
             } catch (error) {
                 if (requestIdRef.current !== currentRequestId) {
                     return;
@@ -515,7 +536,13 @@ export function Navbar() {
     const toggleSearch = () => {
         setIsMenuOpen(false);
         setIsProjectsPanelOpen(false);
-        setIsSearchOpen((isOpen) => !isOpen);
+        setIsSearchOpen((isOpen) => {
+            const nextState = !isOpen;
+            if (nextState) {
+                trackMetricEvent("search_open");
+            }
+            return nextState;
+        });
     };
 
     const toggleSearchFilter = () => {
@@ -530,19 +557,25 @@ export function Navbar() {
         });
     };
 
-    const openRideConsole = () => {
-        void requestExternalNavigation(rideConsoleUrl);
-    };
-
-    const openRideSignup = () => {
-        void requestExternalNavigation(rideSignupUrl);
-    };
-
     const openAccount = () => {
         setIsMenuOpen(false);
         setIsProjectsPanelOpen(false);
         setIsSearchOpen(false);
         navigate("/account");
+    };
+
+    const openAccountLogin = () => {
+        setIsMenuOpen(false);
+        setIsProjectsPanelOpen(false);
+        setIsSearchOpen(false);
+        navigate("/account?mode=login");
+    };
+
+    const openAccountRegister = () => {
+        setIsMenuOpen(false);
+        setIsProjectsPanelOpen(false);
+        setIsSearchOpen(false);
+        navigate("/account?mode=register");
     };
 
     const activeProjectsCategory = projectsCategories[activeProjectsCategoryIndex] ?? projectsCategories[0];
@@ -562,6 +595,21 @@ export function Navbar() {
 
     const openSearchResultInNewTab = async (item: SearchResultItem) => {
         const navigationTarget = resolveSearchResultNavigation(item);
+        const sourceType = normalizeSourceType(item.type);
+        const queryId = searchQueryIdRef.current;
+
+        trackMetricEvent("search_result_click", {
+            queryId,
+            resultId: item.id,
+            sourceId: item.sourceId,
+            sourceType
+        });
+        trackMetricEvent("search_result_opened", {
+            queryId,
+            resultId: item.id,
+            sourceId: item.sourceId,
+            sourceType
+        });
 
         if (!navigationTarget.externalUrl) {
             window.open(`${window.location.origin}${navigationTarget.internalPath}`, "_blank");
@@ -609,22 +657,6 @@ export function Navbar() {
                 {link.icon && <img alt="" aria-hidden="true" src={link.icon}/>}
             </>
         );
-
-        if (link.action === "openRideSignup") {
-            return (
-                <button className={className} key={key} onClick={openRideSignup} type="button">
-                    {content}
-                </button>
-            );
-        }
-
-        if (link.action === "openRideConsole") {
-            return (
-                <button className={className} key={key} onClick={openRideConsole} type="button">
-                    {content}
-                </button>
-            );
-        }
 
         if (link.action === "openAccount") {
             return (
@@ -744,11 +776,11 @@ export function Navbar() {
                                     <div className="site-navigation-dropdown-actions">
                                         <div className="site-navigation-dropdown-divider"/>
 
-                                        <button className="site-navigation-link site-navigation-dropdown-link" onClick={openRideConsole} type="button">
-                                            Вход в консоль
+                                        <button className="site-navigation-link site-navigation-dropdown-link" onClick={openAccountLogin} type="button">
+                                            Войти
                                         </button>
-                                        <button className="site-navigation-link site-navigation-dropdown-link" onClick={openRideSignup} type="button">
-                                            Создать аккаунт
+                                        <button className="site-navigation-link site-navigation-dropdown-link" onClick={openAccountRegister} type="button">
+                                            Регистрация
                                         </button>
                                         <button className="site-navigation-link site-navigation-dropdown-link" onClick={openAccount} type="button">
                                             Мой аккаунт
@@ -763,7 +795,7 @@ export function Navbar() {
                                 <img alt="" aria-hidden="true" src={searchIcon}/>
                                 <span>Поиск</span>
                             </button>
-                            <button className="site-console-button" onClick={openRideConsole} type="button">Вход в консоль</button>
+                            <button className="site-console-button" onClick={openAccountLogin} type="button">Войти</button>
                             <button className="site-account-button" onClick={openAccount} type="button">Мой аккаунт</button>
                             <button className="site-mobile-account-button" onClick={openAccount} type="button">
                                 <img alt="" aria-hidden="true" src={accountIcon}/>
@@ -945,11 +977,11 @@ export function Navbar() {
                                         <img alt="" aria-hidden="true" src={searchIcon}/>
                                         <span>Поиск</span>
                                     </button>
-                                    <button className="site-navigation-link site-navigation-dropdown-link" onClick={openRideConsole} type="button">
-                                        Вход в консоль
+                                    <button className="site-navigation-link site-navigation-dropdown-link" onClick={openAccountLogin} type="button">
+                                        Войти
                                     </button>
-                                    <button className="site-navigation-link site-navigation-dropdown-link" onClick={openRideSignup} type="button">
-                                        Создать аккаунт
+                                    <button className="site-navigation-link site-navigation-dropdown-link" onClick={openAccountRegister} type="button">
+                                        Регистрация
                                     </button>
                                 </div>
                             </div>

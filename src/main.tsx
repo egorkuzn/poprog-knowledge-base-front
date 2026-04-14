@@ -12,6 +12,7 @@ import {ProjectsView} from "./view/pages/projects/ProjectsView";
 import {ProjectItemView} from "./view/pages/projects/ProjectItemView";
 import {MarketView} from "./view/pages/market/MarketView";
 import {AccountView} from "./view/pages/account/AccountView";
+import {AdminDonationsView} from "./view/pages/account/AdminDonationsView";
 import {DonateView} from "./view/pages/donate/DonateView";
 import {SupportView} from "./view/pages/support/SupportView";
 import {ContactView} from "./view/pages/contact/ContactView";
@@ -52,6 +53,10 @@ const router = createBrowserRouter([
     {
         path: "/account",
         element: <AccountView/>
+    },
+    {
+        path: "/account/admin/donations",
+        element: <AdminDonationsView/>
     },
     {
         path: "/donate",

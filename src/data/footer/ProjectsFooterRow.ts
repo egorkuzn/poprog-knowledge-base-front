@@ -13,7 +13,7 @@ export class ProjectsFooterRow implements FooterRawData {
         },
         {
             title: "Проект RIDE/Theia",
-            hash: "ride"
+            hash: "ride-overview"
         },
         {
             title: "Язык IndustrialC",
@@ -21,7 +21,7 @@ export class ProjectsFooterRow implements FooterRawData {
         },
         {
             title: "EDTL",
-            hash: "edtl"
+            hash: "edtl-spec"
         }
     ]
 }
