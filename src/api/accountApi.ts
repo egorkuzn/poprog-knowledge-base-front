@@ -1,4 +1,4 @@
-import {deleteJson, getJson, postJson, putJson} from "./http";
+import {deleteJson, downloadFile, getJson, postJson, putJson} from "./http";
 import type {
     AccountChatSummaryResponse,
     AccountDonationResponse,
@@ -44,4 +44,25 @@ export function createDonation(request: CreateDonationRequest): Promise<AccountD
 
 export function updateDonationStatus(donationId: string, request: UpdateDonationStatusRequest): Promise<AccountDonationResponse> {
     return postJson<AccountDonationResponse, UpdateDonationStatusRequest>(`/api/account/donations/${donationId}/status`, request);
+}
+
+function buildExportQuery(from?: string, to?: string): string {
+    const params = new URLSearchParams();
+    if (from) {
+        params.set("from", from);
+    }
+    if (to) {
+        params.set("to", to);
+    }
+
+    const query = params.toString();
+    return query.length > 0 ? `?${query}` : "";
+}
+
+export function downloadAccountDonationsCsv(from?: string, to?: string): Promise<void> {
+    return downloadFile(`/api/account/donations/export.csv${buildExportQuery(from, to)}`, "account-donations.csv");
+}
+
+export function downloadAccountDonationsPdf(from?: string, to?: string): Promise<void> {
+    return downloadFile(`/api/account/donations/export.pdf${buildExportQuery(from, to)}`, "account-donations.pdf");
 }

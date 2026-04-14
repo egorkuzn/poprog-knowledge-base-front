@@ -134,6 +134,43 @@ export interface AccountDonationResponse {
     paidAt: string | null
 }
 
+export interface AdminDonationKpiResponse {
+    totalDonationsCount: number
+    succeededDonationsCount: number
+    pendingDonationsCount: number
+    canceledDonationsCount: number
+    anonymousDonationsCount: number
+    uniqueDonorsCount: number
+    totalAmount: string
+    succeededAmount: string
+    averageAmount: string
+    conversionRatePercent: string
+    currencies: string[]
+}
+
+export interface AdminDonationEventResponse {
+    id: string
+    eventType: string
+    eventAt: string
+    status: string
+    amount: string
+    currency: string
+    userSub: string | null
+    source: string | null
+    message: string | null
+    providerPaymentId: string | null
+    createdAt: string
+    updatedAt: string
+    paidAt: string | null
+}
+
+export interface AdminDonationEventPageResponse {
+    items: AdminDonationEventResponse[]
+    totalCount: number
+    page: number
+    size: number
+}
+
 export interface CreateDonationRequest {
     amount: number
     currency: string

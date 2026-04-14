@@ -3,6 +3,7 @@ import {Link} from "react-router-dom";
 import BodyView from "../BodyView";
 import "../../../styles/pages/Home.scss";
 import {submitSiteFeedback, type SiteFeedbackChoice} from "../../../api/siteFeedbackApi";
+import {trackMetricEvent} from "../../../utils/analytics";
 import heroBackground from "../../../assets/home/hero/hero-bg.png";
 import caseOneImage from "../../../assets/home/cases/case-1.png";
 import caseTwoImage from "../../../assets/home/cases/case-2.png";
@@ -101,6 +102,10 @@ export function Home() {
             await submitSiteFeedback({
                 choice,
                 sentAt: new Date().toISOString()
+            });
+
+            trackMetricEvent("feedback_usefulness_submitted", {
+                helpful: choice === "yes"
             });
 
             setFeedbackChoice(choice);
