@@ -1,19 +1,27 @@
 import {useEffect, useMemo, useRef, useState} from "react";
 import type {FormEvent} from "react";
 import type {KeyboardEvent} from "react";
+import {useNavigate} from "react-router-dom";
 import BodyView from "../BodyView";
 import {Breadcrumbs} from "../../common/navigation/Breadcrumbs";
 import "../../../styles/pages/Chat.scss";
 import {assistantChat, getAssistantChatHistory} from "../../../api/knowledgeBaseApi";
-import type {AiAssistantChatRole, ChatHistoryMessageResponse} from "../../../api/types";
+import type {
+    AiAssistantChatRole,
+    AiAssistantWidgetResponse,
+    ChatHistoryMessageResponse
+} from "../../../api/types";
 import arrowRightAltIcon from "../../../assets/home/icons/arrow-right-alt.svg";
 import arrowTopIcon from "../../../assets/home/icons/arrow-top.svg";
+import {ChatWidget} from "./ChatWidget";
+import {trackMetricEvent} from "../../../utils/analytics";
 
 interface ChatMessage {
     id: string
     role: "assistant" | "user" | "system"
     text: string
     createdAt: string
+    widget?: AiAssistantWidgetResponse | null
 }
 
 const chatStorageKey = "assistant_chat_id";
@@ -33,11 +41,13 @@ function mapHistoryMessage(message: ChatHistoryMessageResponse): ChatMessage {
         id: `history-${message.id}`,
         role: message.role,
         text: message.content,
+        widget: message.widget ?? null,
         createdAt: formatMessageTime(message.createdAt)
     };
 }
 
 export function ChatView() {
+    const navigate = useNavigate();
     const [messages, setMessages] = useState<ChatMessage[]>([]);
     const [draft, setDraft] = useState("");
     const [isLoadingHistory, setIsLoadingHistory] = useState(true);
@@ -165,6 +175,35 @@ export function ChatView() {
                 {messages.map((message) => (
                     <article className={`chat-message chat-message-${message.role}`} key={message.id}>
                         <p>{message.text}</p>
+                        {message.widget && (
+                            <ChatWidget
+                                onAction={(action) => {
+                                    if (action.kind === "navigate" && action.href) {
+                                        trackMetricEvent("ai_widget_action_clicked", {widgetType: message.widget?.widgetType, actionId: action.id, actionKind: action.kind, href: action.href}, "/chat");
+                                        navigate(action.href);
+                                        return;
+                                    }
+
+                                    if (action.prompt) {
+                                        trackMetricEvent("ai_follow_up_selected", {widgetType: message.widget?.widgetType, actionId: action.id, prompt: action.prompt}, "/chat");
+                                        void sendPrompt(action.prompt);
+                                    }
+                                }}
+                                onItemClick={(item) => {
+                                    if (item.href) {
+                                        trackMetricEvent("ai_widget_action_clicked", {widgetType: message.widget?.widgetType, itemId: item.id, href: item.href}, "/chat");
+                                        navigate(item.href);
+                                        return;
+                                    }
+
+                                    if (item.prompt) {
+                                        trackMetricEvent("ai_follow_up_selected", {widgetType: message.widget?.widgetType, itemId: item.id, prompt: item.prompt}, "/chat");
+                                        void sendPrompt(item.prompt);
+                                    }
+                                }}
+                                widget={message.widget}
+                            />
+                        )}
                         <span>{message.createdAt}</span>
                     </article>
                 ))}
@@ -172,8 +211,8 @@ export function ChatView() {
         );
     }, [chatError, isLoadingHistory, messages]);
 
-    const sendCurrentMessage = async () => {
-        const text = draft.trim();
+    const sendPrompt = async (promptText: string) => {
+        const text = promptText.trim();
         if (text.length === 0 || isSending) {
             return;
         }
@@ -187,7 +226,9 @@ export function ChatView() {
 
         setMessages((current) => [...current, userMessage]);
         setChatError("");
-        setDraft("");
+        if (promptText === draft) {
+            setDraft("");
+        }
         if (textareaRef.current) {
             textareaRef.current.style.height = "";
             textareaRef.current.style.overflowY = "hidden";
@@ -212,8 +253,16 @@ export function ChatView() {
                 id: `assistant-${Date.now()}`,
                 role: "assistant",
                 text: response.content,
-                createdAt: new Date().toLocaleTimeString([], {hour: "2-digit", minute: "2-digit"})
+                createdAt: new Date().toLocaleTimeString([], {hour: "2-digit", minute: "2-digit"}),
+                widget: response.widget
             };
+
+            if (response.widget) {
+                trackMetricEvent("ai_widget_shown", {widgetType: response.widget.widgetType, mode: response.mode}, "/chat");
+            }
+            if (response.mode === "text") {
+                trackMetricEvent("ai_answer_completed", {mode: response.mode}, "/chat");
+            }
 
             setMessages((current) => [...current, assistantMessage]);
         } catch (error) {
@@ -222,6 +271,8 @@ export function ChatView() {
             setIsSending(false);
         }
     };
+
+    const sendCurrentMessage = async () => sendPrompt(draft);
 
     const onSubmit = async (event: FormEvent<HTMLFormElement>) => {
         event.preventDefault();

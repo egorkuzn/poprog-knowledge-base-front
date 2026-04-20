@@ -51,6 +51,7 @@ export interface ProblemDetail {
 }
 
 export type AiAssistantChatRole = "system" | "user" | "assistant";
+export type AiAssistantChatMode = "text" | "widget" | "hybrid";
 
 export interface AiAssistantChatMessageRequest {
     role: AiAssistantChatRole
@@ -66,16 +67,47 @@ export interface AiAssistantChatResponse {
     chatId: string
     content: string
     model: string
+    mode: AiAssistantChatMode
     finishReason: string | null
     promptTokens: number | null
     completionTokens: number | null
     totalTokens: number | null
+    widget: AiAssistantWidgetResponse | null
+}
+
+export interface AiAssistantWidgetResponse {
+    widgetType: string
+    title: string
+    subtitle: string | null
+    items: AiAssistantWidgetItemResponse[]
+    actions: AiAssistantWidgetActionResponse[]
+    followUpOptions: AiAssistantWidgetActionResponse[]
+}
+
+export interface AiAssistantWidgetItemResponse {
+    id: string
+    title: string
+    subtitle: string | null
+    meta: string | null
+    href: string | null
+    prompt: string | null
+    sourceType: string | null
+    sourceId: string | null
+}
+
+export interface AiAssistantWidgetActionResponse {
+    id: string
+    label: string
+    kind: string
+    href: string | null
+    prompt: string | null
 }
 
 export interface ChatHistoryMessageResponse {
     id: number
     role: AiAssistantChatRole
     content: string
+    widget?: AiAssistantWidgetResponse | null
     createdAt: string
 }
 
