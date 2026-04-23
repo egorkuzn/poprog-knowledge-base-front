@@ -19,7 +19,8 @@ import caseOneImage from "../../../assets/home/cases/case-1.png";
 import caseTwoImage from "../../../assets/home/cases/case-2.png";
 
 type SearchState = "idle" | "loading" | "ready" | "error";
-type ProjectLeafItem = { slug: string, title: string };
+type PanelKind = "projects" | "discover";
+type ProjectLeafItem = { slug: string, title: string, to?: string };
 type SearchFilter = "all" | "publication" | "work";
 type TopLinkAction = "openAccount";
 type TopLinkItem = {
@@ -109,6 +110,54 @@ const mobileProjectsItemsByCategory: Record<string, ProjectLeafItem[]> = {
     ]
 };
 
+const discoverCategories = [
+    {
+        key: "start",
+        label: "Старт и основы",
+        title: "Старт и основы процесс-ориентированного программирования",
+        description: "Быстро разберитесь в ключевых принципах и начните работать с экосистемой Poprog.",
+        centerLinkLabel: "Перейти к обзорным материалам"
+    },
+    {
+        key: "languages",
+        label: "Языки и среды",
+        title: "Языки и среды разработки",
+        description: "Изучайте Reflex, poST, IndustrialC, облачную среду RIDE и связанные инженерные практики.",
+        centerLinkLabel: "Открыть каталог языков и сред"
+    },
+    {
+        key: "practice",
+        label: "Практика и внедрение",
+        title: "Практика и внедрение в инженерных командах",
+        description: "Используйте готовые материалы для внедрения процесс-ориентированного подхода в реальные проекты.",
+        centerLinkLabel: "Перейти к кейсам внедрения"
+    }
+];
+
+const mobileDiscoverItemsByCategory: Record<string, ProjectLeafItem[]> = {
+    start: [
+        {slug: "intro", title: "Что такое Poprog", to: "/docs"},
+        {slug: "quick-start", title: "Быстрый старт", to: "/video"},
+        {slug: "publications", title: "Публикации", to: "/publications"},
+        {slug: "works", title: "Студенческие работы", to: "/works"},
+        {slug: "support", title: "Поддержка", to: "/support"}
+    ],
+    languages: [
+        {slug: "reflex", title: "Reflex", to: "/projects/reflex"},
+        {slug: "post", title: "poST", to: "/projects/post"},
+        {slug: "industrial-c", title: "IndustrialC", to: "/projects/industrial-c"},
+        {slug: "ride", title: "RIDE", to: "/projects/ride-overview"},
+        {slug: "edtl", title: "EDTL", to: "/projects/edtl-spec"}
+    ],
+    practice: [
+        {slug: "success", title: "Истории успеха", to: "/projects/success-stories"},
+        {slug: "research", title: "Материалы исследований", to: "/publications"},
+        {slug: "thesis", title: "Дипломные и диссертации", to: "/works"},
+        {slug: "market", title: "Poprog маркет", to: "/market"},
+        {slug: "contact", title: "Свяжитесь с нами", to: "/contact"}
+    ]
+};
+
 const projectItemDescriptions: Record<string, string> = {
     "reflex": "Язык для разработки ПО микроконтроллеров во встраиваемых системах с использованием методик процесс-ориентированного программирования",
     "post": "Процесс-ориентированное расширение языка Structured Text (ST) для программирования алгоритмически сложных управляющих программ для ПЛК",
@@ -131,6 +180,24 @@ const projectItemDescriptions: Record<string, string> = {
     "quality-metrics": "Отслеживайте метрики качества и стабильности ваших решений",
     "analysis-reports": "Формируйте отчеты статического анализа для инженерных команд",
     "analysis-whats-new": "Новые функции и подходы в инструментах анализа"
+};
+
+const discoverItemDescriptions: Record<string, string> = {
+    "intro": "Обзор портала, направлений и ключевых сценариев работы с инструментами Poprog.",
+    "quick-start": "Краткий маршрут запуска: от первого шага до рабочего демонстрационного сценария.",
+    "publications": "Подборка публикаций и методических материалов по процесс-ориентированному программированию.",
+    "works": "Коллекция студенческих работ, дипломов и диссертаций с практическими результатами.",
+    "support": "Канал поддержки по вопросам запуска, обучения и использования компонентов платформы.",
+    "reflex": "Язык для разработки ПО микроконтроллеров с акцентом на процесс-ориентированное проектирование.",
+    "post": "Расширение Structured Text для сложных управляющих алгоритмов в ПЛК.",
+    "industrial-c": "Процесс-ориентированный язык для промышленной автоматизации и систем реального времени.",
+    "ride": "Облачная среда разработки для командной работы над промышленными программными системами.",
+    "edtl": "Инструменты формализации требований и связи спецификаций с реализацией.",
+    "success": "Практические примеры внедрения и эффекты от применения подходов Poprog.",
+    "research": "Научные и прикладные материалы для инженерных и исследовательских команд.",
+    "thesis": "Работы студентов и аспирантов, отражающие практику применения методов.",
+    "market": "Каталог утилит и модулей для ускорения разработки и поддержки решений.",
+    "contact": "Свяжитесь с командой для сотрудничества, обратной связи и партнерских сценариев."
 };
 
 type MobileProjectsMenuStage = "root" | "groups" | "items";
@@ -213,9 +280,13 @@ function getApiHostFromBaseUrl(): string {
     return apiBaseUrl;
 }
 
-function getProjectsPanelItemsByCategory(categoryKey: string): ProjectLeafItem[] {
-    const sourceItems = mobileProjectsItemsByCategory[categoryKey] ?? [];
-    const fallbackItems = mobileProjectsItemsByCategory.languages ?? [];
+function getPanelItemsByCategory(
+    itemsByCategory: Record<string, ProjectLeafItem[]>,
+    categoryKey: string,
+    fallbackKey: string
+): ProjectLeafItem[] {
+    const sourceItems = itemsByCategory[categoryKey] ?? [];
+    const fallbackItems = itemsByCategory[fallbackKey] ?? [];
     const itemsToUse = sourceItems.length > 0 ? [...sourceItems] : [...fallbackItems];
 
     while (itemsToUse.length > 0 && itemsToUse.length < 5) {
@@ -227,6 +298,20 @@ function getProjectsPanelItemsByCategory(categoryKey: string): ProjectLeafItem[]
 
 function getProjectItemDescription(item: ProjectLeafItem): string {
     return projectItemDescriptions[item.slug] ?? `Откройте раздел «${item.title}» и изучите материалы по направлению.`;
+}
+
+function getDiscoverItemDescription(item: ProjectLeafItem): string {
+    return discoverItemDescriptions[item.slug] ?? `Откройте раздел «${item.title}» и изучите материалы портала Poprog.`;
+}
+
+function getPanelItemPath(item: ProjectLeafItem, panelKind: PanelKind): string {
+    if (item.to && item.to.length > 0) {
+        return item.to;
+    }
+    if (panelKind === "discover") {
+        return "/docs";
+    }
+    return `/projects/${item.slug}`;
 }
 
 function resolveSearchResultNavigation(item: SearchResultItem): { externalUrl?: string, internalPath: string } {
@@ -279,8 +364,10 @@ export function Navbar() {
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const [isSearchOpen, setIsSearchOpen] = useState(false);
     const [isProjectsPanelOpen, setIsProjectsPanelOpen] = useState(false);
+    const [activePanelKind, setActivePanelKind] = useState<PanelKind>("projects");
     const [activeProjectsCategoryIndex, setActiveProjectsCategoryIndex] = useState(0);
     const [mobileProjectsMenuStage, setMobileProjectsMenuStage] = useState<MobileProjectsMenuStage>("root");
+    const [mobilePanelKind, setMobilePanelKind] = useState<PanelKind>("projects");
     const [mobileProjectsCategoryIndex, setMobileProjectsCategoryIndex] = useState(0);
     const [searchQuery, setSearchQuery] = useState("");
     const [searchState, setSearchState] = useState<SearchState>("idle");
@@ -579,15 +666,24 @@ export function Navbar() {
     };
 
     const activeProjectsCategory = projectsCategories[activeProjectsCategoryIndex] ?? projectsCategories[0];
-    const mobileProjectsCategory = projectsCategories[mobileProjectsCategoryIndex] ?? projectsCategories[0];
-    const mobileProjectsItems = mobileProjectsItemsByCategory[mobileProjectsCategory.key] ?? [];
-    const projectsPanelItems = getProjectsPanelItemsByCategory(activeProjectsCategory.key);
+    const activeDiscoverCategory = discoverCategories[activeProjectsCategoryIndex] ?? discoverCategories[0];
+    const panelCategories = activePanelKind === "projects" ? projectsCategories : discoverCategories;
+    const activePanelCategory = activePanelKind === "projects" ? activeProjectsCategory : activeDiscoverCategory;
+    const panelItemsByCategory = activePanelKind === "projects" ? mobileProjectsItemsByCategory : mobileDiscoverItemsByCategory;
+    const panelDescriptions = activePanelKind === "projects" ? getProjectItemDescription : getDiscoverItemDescription;
+    const panelFallbackKey = activePanelKind === "projects" ? "languages" : "start";
+    const mobilePanelCategories = mobilePanelKind === "projects" ? projectsCategories : discoverCategories;
+    const mobilePanelItemsByCategory = mobilePanelKind === "projects" ? mobileProjectsItemsByCategory : mobileDiscoverItemsByCategory;
+    const mobilePanelCategory = mobilePanelCategories[mobileProjectsCategoryIndex] ?? mobilePanelCategories[0];
+    const mobileProjectsItems = mobilePanelItemsByCategory[mobilePanelCategory.key] ?? [];
+    const projectsPanelItems = getPanelItemsByCategory(panelItemsByCategory, activePanelCategory.key, panelFallbackKey);
     const featureProjectItem = projectsPanelItems[0];
     const plainProjectItemOne = projectsPanelItems[1];
     const plainProjectItemTwo = projectsPanelItems[2];
     const newsProjectItem = projectsPanelItems[3];
     const successProjectItem = projectsPanelItems[4];
     const isProjectsRouteActive = location.pathname.startsWith("/projects");
+    const isDiscoverRouteActive = location.pathname.startsWith("/docs");
 
     const closeProjectsPanel = () => {
         setIsProjectsPanelOpen(false);
@@ -702,7 +798,25 @@ export function Navbar() {
                                             onClick={() => {
                                                 setIsSearchOpen(false);
                                                 setIsMenuOpen(false);
-                                                setIsProjectsPanelOpen((isOpen) => !isOpen);
+                                                setActivePanelKind("projects");
+                                                setActiveProjectsCategoryIndex(0);
+                                                setIsProjectsPanelOpen((isOpen) => activePanelKind === "projects" ? !isOpen : true);
+                                            }}
+                                            type="button"
+                                        >
+                                            {title}
+                                        </button>
+                                    ) : path === "/docs" ? (
+                                        <button
+                                            aria-expanded={isProjectsPanelOpen}
+                                            className={`site-navigation-link${isDiscoverRouteActive ? " site-navigation-link-active" : ""}`}
+                                            key={path}
+                                            onClick={() => {
+                                                setIsSearchOpen(false);
+                                                setIsMenuOpen(false);
+                                                setActivePanelKind("discover");
+                                                setActiveProjectsCategoryIndex(0);
+                                                setIsProjectsPanelOpen((isOpen) => activePanelKind === "discover" ? !isOpen : true);
                                             }}
                                             type="button"
                                         >
@@ -749,13 +863,15 @@ export function Navbar() {
                             {isMenuOpen && (
                                 <div className="site-navigation-dropdown">
                                     {NavigationTree.map(([path, title]) => (
-                                        path === "/projects" ? (
+                                        path === "/projects" || path === "/docs" ? (
                                             <button
                                                 className="site-navigation-link site-navigation-dropdown-link"
                                                 key={`dropdown-${path}`}
                                                 onClick={() => {
                                                     setIsMenuOpen(false);
                                                     setIsSearchOpen(false);
+                                                    setActivePanelKind(path === "/docs" ? "discover" : "projects");
+                                                    setActiveProjectsCategoryIndex(0);
                                                     setIsProjectsPanelOpen(true);
                                                 }}
                                                 type="button"
@@ -806,7 +922,12 @@ export function Navbar() {
                 </div>
 
                 {isProjectsPanelOpen && (
-                    <div className="site-projects-panel" ref={projectsPanelRef} role="dialog" aria-label="Панель проектов">
+                    <div
+                        className="site-projects-panel"
+                        ref={projectsPanelRef}
+                        role="dialog"
+                        aria-label={activePanelKind === "projects" ? "Панель проектов" : "Панель раздела Откройте для себя poprog"}
+                    >
                         <button
                             aria-label="Закрыть панель проектов"
                             className="site-projects-panel-close site-search-x-button"
@@ -815,8 +936,8 @@ export function Navbar() {
                         />
 
                         <div className="site-projects-panel-layout">
-                            <aside className="site-projects-panel-sidebar" aria-label="Разделы проектов">
-                                {projectsCategories.map((category, index) => (
+                            <aside className="site-projects-panel-sidebar" aria-label={activePanelKind === "projects" ? "Разделы проектов" : "Разделы Откройте для себя poprog"}>
+                                {panelCategories.map((category, index) => (
                                     <button
                                         className={`site-projects-category${index === activeProjectsCategoryIndex ? " site-projects-category-active" : ""}`}
                                         key={category.key}
@@ -829,49 +950,49 @@ export function Navbar() {
                             </aside>
 
                             <section className="site-projects-panel-content">
-                                <h3>{activeProjectsCategory.title}</h3>
-                                <p>{activeProjectsCategory.description}</p>
-                                <Link className="site-projects-panel-center-link" onClick={closeProjectsPanel} to={`/projects/${featureProjectItem.slug}`}>
-                                    {activeProjectsCategory.centerLinkLabel}
+                                <h3>{activePanelCategory.title}</h3>
+                                <p>{activePanelCategory.description}</p>
+                                <Link className="site-projects-panel-center-link" onClick={closeProjectsPanel} to={getPanelItemPath(featureProjectItem, activePanelKind)}>
+                                    {activePanelCategory.centerLinkLabel}
                                 </Link>
 
                                 <div className="site-projects-panel-top-row">
-                                    <Link className="site-projects-feature-card site-projects-hover-card" onClick={closeProjectsPanel} to={`/projects/${featureProjectItem.slug}`}>
+                                    <Link className="site-projects-feature-card site-projects-hover-card" onClick={closeProjectsPanel} to={getPanelItemPath(featureProjectItem, activePanelKind)}>
                                         <div className="site-projects-feature-copy">
                                             <strong>{featureProjectItem.title}</strong>
-                                            <span>{getProjectItemDescription(featureProjectItem)}</span>
+                                            <span>{panelDescriptions(featureProjectItem)}</span>
                                         </div>
                                         <img alt="" aria-hidden="true" className="site-projects-card-arrow" src={arrowRightAltIcon}/>
                                     </Link>
 
-                                    <Link className="site-projects-plain-card site-projects-hover-card" onClick={closeProjectsPanel} to={`/projects/${plainProjectItemOne.slug}`}>
+                                    <Link className="site-projects-plain-card site-projects-hover-card" onClick={closeProjectsPanel} to={getPanelItemPath(plainProjectItemOne, activePanelKind)}>
                                         <strong>{plainProjectItemOne.title}</strong>
-                                        <span>{getProjectItemDescription(plainProjectItemOne)}</span>
+                                        <span>{panelDescriptions(plainProjectItemOne)}</span>
                                         <img alt="" aria-hidden="true" className="site-projects-card-arrow" src={arrowRightAltIcon}/>
                                     </Link>
 
-                                    <Link className="site-projects-plain-card site-projects-hover-card" onClick={closeProjectsPanel} to={`/projects/${plainProjectItemTwo.slug}`}>
+                                    <Link className="site-projects-plain-card site-projects-hover-card" onClick={closeProjectsPanel} to={getPanelItemPath(plainProjectItemTwo, activePanelKind)}>
                                         <strong>{plainProjectItemTwo.title}</strong>
-                                        <span>{getProjectItemDescription(plainProjectItemTwo)}</span>
+                                        <span>{panelDescriptions(plainProjectItemTwo)}</span>
                                         <img alt="" aria-hidden="true" className="site-projects-card-arrow" src={arrowRightAltIcon}/>
                                     </Link>
                                 </div>
 
                                 <div className="site-projects-panel-bottom-row">
-                                    <Link className="site-projects-news-card site-projects-hover-card" onClick={closeProjectsPanel} to={`/projects/${newsProjectItem.slug}`}>
+                                    <Link className="site-projects-news-card site-projects-hover-card" onClick={closeProjectsPanel} to={getPanelItemPath(newsProjectItem, activePanelKind)}>
                                         <img alt="" className="site-projects-news-image" src={caseOneImage}/>
                                         <div className="site-projects-news-copy">
                                             <strong>{newsProjectItem.title}</strong>
-                                            <span>{getProjectItemDescription(newsProjectItem)}</span>
+                                            <span>{panelDescriptions(newsProjectItem)}</span>
                                         </div>
                                         <img alt="" aria-hidden="true" className="site-projects-card-arrow" src={arrowRightAltIcon}/>
                                     </Link>
 
-                                    <Link className="site-projects-success-card site-projects-hover-card" onClick={closeProjectsPanel} to={`/projects/${successProjectItem.slug}`}>
+                                    <Link className="site-projects-success-card site-projects-hover-card" onClick={closeProjectsPanel} to={getPanelItemPath(successProjectItem, activePanelKind)}>
                                         <img alt="" className="site-projects-success-image" src={caseTwoImage}/>
                                         <div className="site-projects-success-copy">
                                             <strong>{successProjectItem.title}</strong>
-                                            <span>{getProjectItemDescription(successProjectItem)}</span>
+                                            <span>{panelDescriptions(successProjectItem)}</span>
                                         </div>
                                         <img alt="" aria-hidden="true" className="site-projects-card-arrow" src={arrowRightAltIcon}/>
                                     </Link>
@@ -891,11 +1012,12 @@ export function Navbar() {
 
                         <div className="site-header-main-menu-links">
                             {mobileProjectsMenuStage === "root" && NavigationTree.map(([path, title]) => (
-                                path === "/projects" ? (
+                                path === "/projects" || path === "/docs" ? (
                                     <button
                                         className="site-navigation-link site-navigation-dropdown-link site-navigation-dropdown-link-has-children"
                                         key={`mobile-${path}`}
                                         onClick={() => {
+                                            setMobilePanelKind(path === "/docs" ? "discover" : "projects");
                                             setMobileProjectsCategoryIndex(0);
                                             setMobileProjectsMenuStage("groups");
                                         }}
@@ -922,12 +1044,12 @@ export function Navbar() {
                                         type="button"
                                     >
                                         <span aria-hidden="true" className="site-navigation-mobile-back-icon"/>
-                                        <span>Проекты</span>
+                                        <span>{mobilePanelKind === "projects" ? "Проекты" : "Откройте для себя poprog"}</span>
                                     </button>
 
-                                    {projectsCategories.map((category, index) => (
+                                    {mobilePanelCategories.map((category, index) => (
                                         <button
-                                            className={`site-navigation-link site-navigation-dropdown-link${(mobileProjectsItemsByCategory[category.key] ?? []).length > 0 ? " site-navigation-dropdown-link-has-children" : ""}`}
+                                            className={`site-navigation-link site-navigation-dropdown-link${(mobilePanelItemsByCategory[category.key] ?? []).length > 0 ? " site-navigation-dropdown-link-has-children" : ""}`}
                                             key={`mobile-project-group-${category.key}`}
                                             onClick={() => {
                                                 setMobileProjectsCategoryIndex(index);
@@ -949,19 +1071,19 @@ export function Navbar() {
                                         type="button"
                                     >
                                         <span aria-hidden="true" className="site-navigation-mobile-back-icon"/>
-                                        <span>{mobileProjectsCategory.label}</span>
+                                        <span>{mobilePanelCategory.label}</span>
                                     </button>
 
                                     {mobileProjectsItems.map((item) => (
                                         <NavLink
                                             className="site-navigation-link site-navigation-dropdown-link"
-                                            key={`mobile-project-item-${mobileProjectsCategory.key}-${item.slug}`}
+                                            key={`mobile-project-item-${mobilePanelCategory.key}-${item.slug}`}
                                             onClick={() => {
                                                 setIsMenuOpen(false);
                                                 setIsSearchOpen(false);
                                                 setIsProjectsPanelOpen(false);
                                             }}
-                                            to={`/projects/${item.slug}`}
+                                            to={getPanelItemPath(item, mobilePanelKind)}
                                         >
                                             {item.title}
                                         </NavLink>
