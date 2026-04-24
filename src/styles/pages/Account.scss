@@ -7,6 +7,7 @@
 .account-hero {
   margin: 0 0 16px;
   width: 100%;
+  box-sizing: border-box;
   padding: 18px 20px;
   border-radius: 16px;
   background: #ffffff;
@@ -129,8 +130,19 @@
   font-weight: 700;
 }
 
+.account-inline-link-button {
+  border: 0;
+  background: transparent;
+  padding: 0;
+  text-decoration: underline;
+  cursor: pointer;
+  min-height: auto;
+}
+
 .account-card {
   margin: 0 0 14px;
+  width: 100%;
+  box-sizing: border-box;
   padding: 16px 18px;
   border-radius: 16px;
   border: 1px solid #dee3ef;
@@ -157,6 +169,10 @@
   gap: 8px 14px;
 }
 
+.account-grid-link-row {
+  grid-column: 1 / -1;
+}
+
 .account-card-header {
   display: flex;
   align-items: center;
@@ -169,6 +185,10 @@
   flex-wrap: wrap;
   justify-content: flex-end;
   gap: 8px;
+}
+
+.account-edit-actions {
+  justify-content: flex-start;
 }
 
 .account-card-header button {
