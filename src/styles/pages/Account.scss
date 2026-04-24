@@ -169,6 +169,16 @@
   gap: 8px 14px;
 }
 
+.account-profile-grid {
+  gap: 14px 20px;
+}
+
+.account-profile-meta {
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid #e5eaf3;
+}
+
 .account-grid-link-row {
   grid-column: 1 / -1;
 }
@@ -266,6 +276,26 @@
   font-size: clamp(1.6rem, 2vw, 2rem);
   font-weight: 800;
   color: #153b9d;
+}
+
+.account-chat-kpi-grid {
+  grid-template-columns: repeat(3, minmax(180px, 1fr));
+}
+
+.account-chat-kpi-card {
+  display: flex;
+  flex-direction: column;
+  min-height: 210px;
+}
+
+.account-chat-kpi-card h3 {
+  margin: 0;
+  min-height: 96px;
+}
+
+.account-chat-kpi-card .account-admin-kpi-value {
+  margin-top: auto;
+  line-height: 1;
 }
 
 .account-admin-table-wrap {

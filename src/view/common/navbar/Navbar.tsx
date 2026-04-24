@@ -933,7 +933,7 @@ export function Navbar() {
                                             onClick={isAuthenticated ? openRideConsole : openAccountLogin}
                                             type="button"
                                         >
-                                            {isAuthenticated ? "В RIDE" : "Войти в RIDE"}
+                                            {isAuthenticated ? "Перейти в RIDE" : "Войти в RIDE"}
                                         </button>
                                         <button className="site-navigation-link site-navigation-dropdown-link" onClick={handleAuthAction} type="button">
                                             {isAuthenticated ? "Выйти" : "Создать аккаунт"}
@@ -956,7 +956,7 @@ export function Navbar() {
                                 onClick={isAuthenticated ? openRideConsole : openAccountLogin}
                                 type="button"
                             >
-                                {isAuthenticated ? "В RIDE" : "Войти в RIDE"}
+                                {isAuthenticated ? "Перейти в RIDE" : "Войти в RIDE"}
                             </button>
                             <button className="site-account-button" onClick={handleAuthAction} type="button">
                                 {isAuthenticated ? "Выйти" : "Создать аккаунт"}
@@ -1152,7 +1152,7 @@ export function Navbar() {
                                         onClick={isAuthenticated ? openRideConsole : openAccountLogin}
                                         type="button"
                                     >
-                                        {isAuthenticated ? "В RIDE" : "Войти в RIDE"}
+                                        {isAuthenticated ? "Перейти в RIDE" : "Войти в RIDE"}
                                     </button>
                                     <button className="site-navigation-link site-navigation-dropdown-link" onClick={handleAuthAction} type="button">
                                         {isAuthenticated ? "Выйти" : "Создать аккаунт"}

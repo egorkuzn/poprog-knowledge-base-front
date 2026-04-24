@@ -30,7 +30,6 @@ import {
     type AuthMode,
     type LocalAuthSession
 } from "../../../utils/localAuth";
-import {rideConsoleUrl} from "../../../utils/ridePortal";
 import "../../../styles/pages/Account.scss";
 
 const serviceRoles = new Set(["ADMIN", "MODERATOR", "SUPPORT", "DEVOPS", "PM", "EDITOR"]);
@@ -76,6 +75,7 @@ export function AccountView() {
     const [profileEditError, setProfileEditError] = useState("");
 
     const hasServiceRole = (profile?.roles ?? []).some((role) => serviceRoles.has(role.toUpperCase()));
+    const hasAdminRole = (profile?.roles ?? []).some((role) => role.toUpperCase() === "ADMIN");
     const profileSubject = profile?.subject ?? "";
     const isLocalRoleDebugVisible = typeof window !== "undefined"
         && ["localhost", "127.0.0.1"].includes(window.location.hostname);
@@ -429,13 +429,7 @@ export function AccountView() {
                         <div className="account-card-header">
                             <h2>Профиль</h2>
                             <div className="account-card-actions">
-                                <button
-                                    onClick={() => window.open(rideConsoleUrl, "_blank", "noopener,noreferrer")}
-                                    type="button"
-                                >
-                                    В RIDE
-                                </button>
-                                {hasServiceRole && (
+                                {hasAdminRole && (
                                     <button onClick={() => navigate("/account/admin/donations")} type="button">
                                         Аналитика пожертвований
                                     </button>
@@ -444,7 +438,7 @@ export function AccountView() {
                             </div>
                         </div>
                         {!isProfileEditing && (
-                            <div className="account-grid">
+                            <div className="account-grid account-profile-grid">
                                 <div><strong>Имя:</strong> {profile.name}</div>
                                 <div><strong>Email:</strong> {profile.email}</div>
                                 <div className="account-grid-link-row">
@@ -503,7 +497,7 @@ export function AccountView() {
                                 </div>
                             </form>
                         )}
-                        <div className="account-grid">
+                        <div className="account-grid account-profile-grid account-profile-meta">
                             <div><strong>Subject:</strong> {profile.subject}</div>
                             {hasServiceRole && <div><strong>Роли:</strong> {profile.roles.join(", ") || "—"}</div>}
                         </div>
@@ -556,20 +550,20 @@ export function AccountView() {
                             )}
                         </section>
 
-                        {hasServiceRole && (
+                        {hasAdminRole && (
                             <section className="account-card account-card-full">
                                 <h2>Аналитика ИИ-чатов</h2>
                                 <p>Сводные показатели по пользовательским сессиям ИИ-чата в текущем аккаунте.</p>
-                                <div className="account-admin-kpi-grid">
-                                    <article className="account-card">
+                                <div className="account-admin-kpi-grid account-chat-kpi-grid">
+                                    <article className="account-card account-chat-kpi-card">
                                         <h3>Создано чатов</h3>
                                         <p className="account-admin-kpi-value">{totalChatsCreated}</p>
                                     </article>
-                                    <article className="account-card">
+                                    <article className="account-card account-chat-kpi-card">
                                         <h3>Сообщений в чатах</h3>
                                         <p className="account-admin-kpi-value">{totalChatMessages}</p>
                                     </article>
-                                    <article className="account-card">
+                                    <article className="account-card account-chat-kpi-card">
                                         <h3>Оценка потребления токенов</h3>
                                         <p className="account-admin-kpi-value">{estimatedTokenConsumption}</p>
                                     </article>
