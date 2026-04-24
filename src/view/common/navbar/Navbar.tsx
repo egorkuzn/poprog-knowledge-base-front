@@ -10,6 +10,8 @@ import {
     type ExternalNavigationRequestDetail
 } from "../../../utils/externalNavigation";
 import {normalizeSourceType, trackMetricEvent} from "../../../utils/analytics";
+import {clearLocalAuthSession, localAuthChangedEventName, readLocalAuthSession} from "../../../utils/localAuth";
+import {rideConsoleUrl} from "../../../utils/ridePortal";
 import {NavigationTree} from "../../../data/navbar/NavigationTree";
 import searchIcon from "../../../assets/home/icons/search.svg";
 import accountIcon from "../../../assets/home/icons/account.svg";
@@ -364,6 +366,7 @@ export function Navbar() {
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const [isSearchOpen, setIsSearchOpen] = useState(false);
     const [isProjectsPanelOpen, setIsProjectsPanelOpen] = useState(false);
+    const [isAuthenticated, setIsAuthenticated] = useState(() => readLocalAuthSession() !== null);
     const [activePanelKind, setActivePanelKind] = useState<PanelKind>("projects");
     const [activeProjectsCategoryIndex, setActiveProjectsCategoryIndex] = useState(0);
     const [mobileProjectsMenuStage, setMobileProjectsMenuStage] = useState<MobileProjectsMenuStage>("root");
@@ -523,6 +526,23 @@ export function Navbar() {
     }, [isMenuOpen]);
 
     useEffect(() => {
+        const syncAuthState = () => {
+            setIsAuthenticated(readLocalAuthSession() !== null);
+        };
+
+        syncAuthState();
+        window.addEventListener("storage", syncAuthState);
+        window.addEventListener("focus", syncAuthState);
+        window.addEventListener(localAuthChangedEventName, syncAuthState as EventListener);
+
+        return () => {
+            window.removeEventListener("storage", syncAuthState);
+            window.removeEventListener("focus", syncAuthState);
+            window.removeEventListener(localAuthChangedEventName, syncAuthState as EventListener);
+        };
+    }, []);
+
+    useEffect(() => {
         if (!isSearchOpen || trimmedQuery.length === 0) {
             setSearchState("idle");
             setSearchResults([]);
@@ -663,6 +683,22 @@ export function Navbar() {
         setIsProjectsPanelOpen(false);
         setIsSearchOpen(false);
         navigate("/account?mode=register");
+    };
+
+    const openRideConsole = () => {
+        setIsMenuOpen(false);
+        setIsProjectsPanelOpen(false);
+        setIsSearchOpen(false);
+        window.open(rideConsoleUrl, "_blank", "noopener,noreferrer");
+    };
+
+    const handleAuthAction = () => {
+        if (isAuthenticated) {
+            clearLocalAuthSession();
+            navigate("/account?mode=login");
+            return;
+        }
+        openAccountRegister();
     };
 
     const activeProjectsCategory = projectsCategories[activeProjectsCategoryIndex] ?? projectsCategories[0];
@@ -892,11 +928,15 @@ export function Navbar() {
                                     <div className="site-navigation-dropdown-actions">
                                         <div className="site-navigation-dropdown-divider"/>
 
-                                        <button className="site-navigation-link site-navigation-dropdown-link" onClick={openAccountLogin} type="button">
-                                            Войти
+                                        <button
+                                            className="site-navigation-link site-navigation-dropdown-link"
+                                            onClick={isAuthenticated ? openRideConsole : openAccountLogin}
+                                            type="button"
+                                        >
+                                            {isAuthenticated ? "В RIDE" : "Войти в RIDE"}
                                         </button>
-                                        <button className="site-navigation-link site-navigation-dropdown-link" onClick={openAccountRegister} type="button">
-                                            Регистрация
+                                        <button className="site-navigation-link site-navigation-dropdown-link" onClick={handleAuthAction} type="button">
+                                            {isAuthenticated ? "Выйти" : "Создать аккаунт"}
                                         </button>
                                         <button className="site-navigation-link site-navigation-dropdown-link" onClick={openAccount} type="button">
                                             Мой аккаунт
@@ -911,8 +951,16 @@ export function Navbar() {
                                 <img alt="" aria-hidden="true" src={searchIcon}/>
                                 <span>Поиск</span>
                             </button>
-                            <button className="site-console-button" onClick={openAccountLogin} type="button">Войти</button>
-                            <button className="site-account-button" onClick={openAccount} type="button">Мой аккаунт</button>
+                            <button
+                                className="site-console-button"
+                                onClick={isAuthenticated ? openRideConsole : openAccountLogin}
+                                type="button"
+                            >
+                                {isAuthenticated ? "В RIDE" : "Войти в RIDE"}
+                            </button>
+                            <button className="site-account-button" onClick={handleAuthAction} type="button">
+                                {isAuthenticated ? "Выйти" : "Создать аккаунт"}
+                            </button>
                             <button className="site-mobile-account-button" onClick={openAccount} type="button">
                                 <img alt="" aria-hidden="true" src={accountIcon}/>
                             </button>
@@ -1099,11 +1147,15 @@ export function Navbar() {
                                         <img alt="" aria-hidden="true" src={searchIcon}/>
                                         <span>Поиск</span>
                                     </button>
-                                    <button className="site-navigation-link site-navigation-dropdown-link" onClick={openAccountLogin} type="button">
-                                        Войти
+                                    <button
+                                        className="site-navigation-link site-navigation-dropdown-link"
+                                        onClick={isAuthenticated ? openRideConsole : openAccountLogin}
+                                        type="button"
+                                    >
+                                        {isAuthenticated ? "В RIDE" : "Войти в RIDE"}
                                     </button>
-                                    <button className="site-navigation-link site-navigation-dropdown-link" onClick={openAccountRegister} type="button">
-                                        Регистрация
+                                    <button className="site-navigation-link site-navigation-dropdown-link" onClick={handleAuthAction} type="button">
+                                        {isAuthenticated ? "Выйти" : "Создать аккаунт"}
                                     </button>
                                 </div>
                             </div>

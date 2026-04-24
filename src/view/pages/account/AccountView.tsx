@@ -10,7 +10,8 @@ import {
     getAccountChats,
     getAccountProfile,
     getDonations,
-    getFavorites
+    getFavorites,
+    updateAccountProfile
 } from "../../../api/accountApi";
 import type {
     AccountChatSummaryResponse,
@@ -21,11 +22,15 @@ import type {
 import {
     clearLocalAuthSession,
     createLocalAuthSession,
+    findLocalAuthUserByCredentials,
     readLocalAuthSession,
+    registerLocalAuthUser,
     saveLocalAuthSession,
+    updateLocalAuthSessionProfile,
     type AuthMode,
     type LocalAuthSession
 } from "../../../utils/localAuth";
+import {rideConsoleUrl} from "../../../utils/ridePortal";
 import "../../../styles/pages/Account.scss";
 
 const serviceRoles = new Set(["ADMIN", "MODERATOR", "SUPPORT", "DEVOPS", "PM", "EDITOR"]);
@@ -64,6 +69,10 @@ export function AccountView() {
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState("");
     const [isCreatingDonation, setIsCreatingDonation] = useState(false);
+    const [editName, setEditName] = useState("");
+    const [editEmail, setEditEmail] = useState("");
+    const [isSavingProfile, setIsSavingProfile] = useState(false);
+    const [profileEditError, setProfileEditError] = useState("");
 
     const hasServiceRole = (profile?.roles ?? []).some((role) => serviceRoles.has(role.toUpperCase()));
     const profileSubject = profile?.subject ?? "";
@@ -73,6 +82,14 @@ export function AccountView() {
     useEffect(() => {
         setAuthMode(getAuthModeFromSearch(location.search));
     }, [location.search]);
+
+    useEffect(() => {
+        if (!profile) {
+            return;
+        }
+        setEditName(profile.name);
+        setEditEmail(profile.email);
+    }, [profile]);
 
     useEffect(() => {
         if (!profileSubject) {
@@ -123,7 +140,7 @@ export function AccountView() {
     const authHint = useMemo(() => (
         authMode === "register"
             ? "Создайте аккаунт в интерфейсе Poprog, чтобы сохранять избранное и историю операций."
-            : "Войдите в аккаунт Poprog, чтобы открыть личный кабинет без внешнего редиректа."
+            : "Войдите в аккаунт Poprog, чтобы открыть личный кабинет без внешнего редиректа. Демо: developer@dev.com / developer"
     ), [authMode]);
 
     const switchAuthMode = (mode: AuthMode) => {
@@ -139,11 +156,6 @@ export function AccountView() {
         const normalizedName = authName.trim();
         const normalizedEmail = authEmail.trim();
 
-        if (normalizedName.length < 2) {
-            setAuthError("Введите имя не короче 2 символов.");
-            return;
-        }
-
         if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)) {
             setAuthError("Введите корректный email.");
             return;
@@ -154,12 +166,42 @@ export function AccountView() {
             return;
         }
 
-        const session = createLocalAuthSession(
-            normalizedName,
-            normalizedEmail,
-            authMode,
-            isLocalRoleDebugVisible ? [authRole] : ["USER"]
-        );
+        let session: LocalAuthSession;
+
+        if (authMode === "login") {
+            const foundUser = findLocalAuthUserByCredentials(normalizedEmail, authPassword);
+            if (!foundUser) {
+                setAuthError("Неверный логин или пароль. Для демо используйте developer@dev.com / developer.");
+                return;
+            }
+
+            session = createLocalAuthSession(foundUser.name, foundUser.email, "login", foundUser.roles);
+        } else {
+            if (normalizedName.length < 2) {
+                setAuthError("Введите имя не короче 2 символов.");
+                return;
+            }
+
+            try {
+                registerLocalAuthUser(
+                    normalizedName,
+                    normalizedEmail,
+                    authPassword,
+                    isLocalRoleDebugVisible ? [authRole] : ["USER"]
+                );
+            } catch (registrationError) {
+                setAuthError(registrationError instanceof Error ? registrationError.message : "Не удалось создать аккаунт.");
+                return;
+            }
+
+            session = createLocalAuthSession(
+                normalizedName,
+                normalizedEmail,
+                "register",
+                isLocalRoleDebugVisible ? [authRole] : ["USER"]
+            );
+        }
+
         saveLocalAuthSession(session);
         setProfile(buildProfileFromSession(session));
         setAuthPassword("");
@@ -172,6 +214,44 @@ export function AccountView() {
         setError("");
         setAuthPassword("");
         navigate("/account?mode=login", {replace: true});
+    };
+
+    const handleSaveProfile = async () => {
+        if (!profile) {
+            return;
+        }
+
+        const normalizedName = editName.trim();
+        const normalizedEmail = editEmail.trim();
+        setProfileEditError("");
+
+        if (normalizedName.length < 2) {
+            setProfileEditError("Имя должно быть не короче 2 символов.");
+            return;
+        }
+
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)) {
+            setProfileEditError("Введите корректный email.");
+            return;
+        }
+
+        setIsSavingProfile(true);
+        try {
+            const updatedProfile = await updateAccountProfile({
+                name: normalizedName,
+                email: normalizedEmail
+            });
+            setProfile(updatedProfile);
+        } catch {
+            const localSession = updateLocalAuthSessionProfile(normalizedName, normalizedEmail);
+            if (localSession) {
+                setProfile(buildProfileFromSession(localSession));
+            } else {
+                setProfileEditError("Не удалось сохранить профиль.");
+            }
+        } finally {
+            setIsSavingProfile(false);
+        }
     };
 
     const handleCreateDonation = async (template?: AccountDonationResponse) => {
@@ -258,16 +338,18 @@ export function AccountView() {
                         </div>
 
                         <form className="account-auth-form" onSubmit={handleAuthSubmit}>
-                            <label>
-                                Имя
-                                <input
-                                    autoComplete="name"
-                                    onChange={(event) => setAuthName(event.target.value)}
-                                    placeholder="Иван Петров"
-                                    type="text"
-                                    value={authName}
-                                />
-                            </label>
+                            {authMode === "register" && (
+                                <label>
+                                    Имя
+                                    <input
+                                        autoComplete="name"
+                                        onChange={(event) => setAuthName(event.target.value)}
+                                        placeholder="Иван Петров"
+                                        type="text"
+                                        value={authName}
+                                    />
+                                </label>
+                            )}
                             <label>
                                 Email
                                 <input
@@ -308,6 +390,7 @@ export function AccountView() {
                         </form>
 
                         <p className="account-auth-note">
+                            Тестовый вход: <strong>developer@dev.com</strong> / <strong>developer</strong><br/>
                             После входа вы сможете управлять историей донатов, сохранять избранные материалы и переходить в чаты.
                             <Link to="/donate"> Поддержать проект</Link>
                         </p>
@@ -326,6 +409,12 @@ export function AccountView() {
                         <div className="account-card-header">
                             <h2>Профиль</h2>
                             <div className="account-card-actions">
+                                <button
+                                    onClick={() => window.open(rideConsoleUrl, "_blank", "noopener,noreferrer")}
+                                    type="button"
+                                >
+                                    В RIDE
+                                </button>
                                 {hasServiceRole && (
                                     <button onClick={() => navigate("/account/admin/donations")} type="button">
                                         Админ-донаты
@@ -334,10 +423,37 @@ export function AccountView() {
                                 <button onClick={handleLogout} type="button">Выйти</button>
                             </div>
                         </div>
+                        <form className="account-auth-form" onSubmit={(event) => {
+                            event.preventDefault();
+                            void handleSaveProfile();
+                        }}>
+                            <label>
+                                Имя
+                                <input
+                                    autoComplete="name"
+                                    onChange={(event) => setEditName(event.target.value)}
+                                    placeholder="Иван Петров"
+                                    type="text"
+                                    value={editName}
+                                />
+                            </label>
+                            <label>
+                                Email
+                                <input
+                                    autoComplete="email"
+                                    onChange={(event) => setEditEmail(event.target.value)}
+                                    placeholder="you@example.com"
+                                    type="email"
+                                    value={editEmail}
+                                />
+                            </label>
+                            {profileEditError.length > 0 && <p className="account-auth-error">{profileEditError}</p>}
+                            <button className="account-auth-submit" disabled={isSavingProfile} type="submit">
+                                {isSavingProfile ? "Сохраняем..." : "Сохранить профиль"}
+                            </button>
+                        </form>
                         <div className="account-grid">
                             <div><strong>Subject:</strong> {profile.subject}</div>
-                            <div><strong>Имя:</strong> {profile.name}</div>
-                            <div><strong>Email:</strong> {profile.email}</div>
                             {hasServiceRole && <div><strong>Роли:</strong> {profile.roles.join(", ") || "—"}</div>}
                         </div>
                     </section>
