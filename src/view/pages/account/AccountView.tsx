@@ -10,7 +10,8 @@ import {
     getAccountChats,
     getAccountProfile,
     getDonations,
-    getFavorites
+    getFavorites,
+    updateAccountProfile
 } from "../../../api/accountApi";
 import type {
     AccountChatSummaryResponse,
@@ -21,8 +22,11 @@ import type {
 import {
     clearLocalAuthSession,
     createLocalAuthSession,
+    findLocalAuthUserByCredentials,
     readLocalAuthSession,
+    registerLocalAuthUser,
     saveLocalAuthSession,
+    updateLocalAuthSessionProfile,
     type AuthMode,
     type LocalAuthSession
 } from "../../../utils/localAuth";
@@ -64,8 +68,14 @@ export function AccountView() {
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState("");
     const [isCreatingDonation, setIsCreatingDonation] = useState(false);
+    const [editName, setEditName] = useState("");
+    const [editEmail, setEditEmail] = useState("");
+    const [isProfileEditing, setIsProfileEditing] = useState(false);
+    const [isSavingProfile, setIsSavingProfile] = useState(false);
+    const [profileEditError, setProfileEditError] = useState("");
 
     const hasServiceRole = (profile?.roles ?? []).some((role) => serviceRoles.has(role.toUpperCase()));
+    const hasAdminRole = (profile?.roles ?? []).some((role) => role.toUpperCase() === "ADMIN");
     const profileSubject = profile?.subject ?? "";
     const isLocalRoleDebugVisible = typeof window !== "undefined"
         && ["localhost", "127.0.0.1"].includes(window.location.hostname);
@@ -73,6 +83,16 @@ export function AccountView() {
     useEffect(() => {
         setAuthMode(getAuthModeFromSearch(location.search));
     }, [location.search]);
+
+    useEffect(() => {
+        if (!profile) {
+            return;
+        }
+        setEditName(profile.name);
+        setEditEmail(profile.email);
+        setIsProfileEditing(false);
+        setProfileEditError("");
+    }, [profile]);
 
     useEffect(() => {
         if (!profileSubject) {
@@ -107,6 +127,15 @@ export function AccountView() {
                     return;
                 }
 
+                const errorMessage = loadError instanceof Error ? loadError.message : "";
+                if (errorMessage.includes("401")) {
+                    setChats([]);
+                    setFavorites([]);
+                    setDonations([]);
+                    setError("");
+                    return;
+                }
+
                 setError(loadError instanceof Error ? loadError.message : "Не удалось загрузить данные кабинета.");
             })
             .finally(() => {
@@ -123,7 +152,7 @@ export function AccountView() {
     const authHint = useMemo(() => (
         authMode === "register"
             ? "Создайте аккаунт в интерфейсе Poprog, чтобы сохранять избранное и историю операций."
-            : "Войдите в аккаунт Poprog, чтобы открыть личный кабинет без внешнего редиректа."
+            : "Войдите в аккаунт Poprog, чтобы открыть личный кабинет без внешнего редиректа. Демо: developer@dev.com / developer"
     ), [authMode]);
 
     const switchAuthMode = (mode: AuthMode) => {
@@ -139,11 +168,6 @@ export function AccountView() {
         const normalizedName = authName.trim();
         const normalizedEmail = authEmail.trim();
 
-        if (normalizedName.length < 2) {
-            setAuthError("Введите имя не короче 2 символов.");
-            return;
-        }
-
         if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)) {
             setAuthError("Введите корректный email.");
             return;
@@ -154,12 +178,42 @@ export function AccountView() {
             return;
         }
 
-        const session = createLocalAuthSession(
-            normalizedName,
-            normalizedEmail,
-            authMode,
-            isLocalRoleDebugVisible ? [authRole] : ["USER"]
-        );
+        let session: LocalAuthSession;
+
+        if (authMode === "login") {
+            const foundUser = findLocalAuthUserByCredentials(normalizedEmail, authPassword);
+            if (!foundUser) {
+                setAuthError("Неверный логин или пароль. Для демо используйте developer@dev.com / developer.");
+                return;
+            }
+
+            session = createLocalAuthSession(foundUser.name, foundUser.email, "login", foundUser.roles);
+        } else {
+            if (normalizedName.length < 2) {
+                setAuthError("Введите имя не короче 2 символов.");
+                return;
+            }
+
+            try {
+                registerLocalAuthUser(
+                    normalizedName,
+                    normalizedEmail,
+                    authPassword,
+                    isLocalRoleDebugVisible ? [authRole] : ["USER"]
+                );
+            } catch (registrationError) {
+                setAuthError(registrationError instanceof Error ? registrationError.message : "Не удалось создать аккаунт.");
+                return;
+            }
+
+            session = createLocalAuthSession(
+                normalizedName,
+                normalizedEmail,
+                "register",
+                isLocalRoleDebugVisible ? [authRole] : ["USER"]
+            );
+        }
+
         saveLocalAuthSession(session);
         setProfile(buildProfileFromSession(session));
         setAuthPassword("");
@@ -171,7 +225,49 @@ export function AccountView() {
         setProfile(null);
         setError("");
         setAuthPassword("");
+        setIsProfileEditing(false);
+        setProfileEditError("");
         navigate("/account?mode=login", {replace: true});
+    };
+
+    const handleSaveProfile = async () => {
+        if (!profile) {
+            return;
+        }
+
+        const normalizedName = editName.trim();
+        const normalizedEmail = editEmail.trim();
+        setProfileEditError("");
+
+        if (normalizedName.length < 2) {
+            setProfileEditError("Имя должно быть не короче 2 символов.");
+            return;
+        }
+
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)) {
+            setProfileEditError("Введите корректный email.");
+            return;
+        }
+
+        setIsSavingProfile(true);
+        try {
+            const updatedProfile = await updateAccountProfile({
+                name: normalizedName,
+                email: normalizedEmail
+            });
+            setProfile(updatedProfile);
+            setIsProfileEditing(false);
+        } catch {
+            const localSession = updateLocalAuthSessionProfile(normalizedName, normalizedEmail);
+            if (localSession) {
+                setProfile(buildProfileFromSession(localSession));
+                setIsProfileEditing(false);
+            } else {
+                setProfileEditError("Не удалось сохранить профиль.");
+            }
+        } finally {
+            setIsSavingProfile(false);
+        }
     };
 
     const handleCreateDonation = async (template?: AccountDonationResponse) => {
@@ -228,6 +324,10 @@ export function AccountView() {
         }
     };
 
+    const totalChatsCreated = chats.length;
+    const totalChatMessages = chats.reduce((sum, item) => sum + item.messageCount, 0);
+    const estimatedTokenConsumption = totalChatMessages * 320;
+
     return BodyView(
         <main className="account-page">
             <Breadcrumbs items={[{label: "Главная", to: "/home"}, {label: "Мой аккаунт"}]}/>
@@ -258,16 +358,18 @@ export function AccountView() {
                         </div>
 
                         <form className="account-auth-form" onSubmit={handleAuthSubmit}>
-                            <label>
-                                Имя
-                                <input
-                                    autoComplete="name"
-                                    onChange={(event) => setAuthName(event.target.value)}
-                                    placeholder="Иван Петров"
-                                    type="text"
-                                    value={authName}
-                                />
-                            </label>
+                            {authMode === "register" && (
+                                <label>
+                                    Имя
+                                    <input
+                                        autoComplete="name"
+                                        onChange={(event) => setAuthName(event.target.value)}
+                                        placeholder="Иван Петров"
+                                        type="text"
+                                        value={authName}
+                                    />
+                                </label>
+                            )}
                             <label>
                                 Email
                                 <input
@@ -308,6 +410,7 @@ export function AccountView() {
                         </form>
 
                         <p className="account-auth-note">
+                            Тестовый вход: <strong>developer@dev.com</strong> / <strong>developer</strong><br/>
                             После входа вы сможете управлять историей донатов, сохранять избранные материалы и переходить в чаты.
                             <Link to="/donate"> Поддержать проект</Link>
                         </p>
@@ -326,18 +429,76 @@ export function AccountView() {
                         <div className="account-card-header">
                             <h2>Профиль</h2>
                             <div className="account-card-actions">
-                                {hasServiceRole && (
+                                {hasAdminRole && (
                                     <button onClick={() => navigate("/account/admin/donations")} type="button">
-                                        Админ-донаты
+                                        Аналитика пожертвований
                                     </button>
                                 )}
                                 <button onClick={handleLogout} type="button">Выйти</button>
                             </div>
                         </div>
-                        <div className="account-grid">
+                        {!isProfileEditing && (
+                            <div className="account-grid account-profile-grid">
+                                <div><strong>Имя:</strong> {profile.name}</div>
+                                <div><strong>Email:</strong> {profile.email}</div>
+                                <div className="account-grid-link-row">
+                                    <button
+                                        className="account-inline-link account-inline-link-button"
+                                        onClick={() => setIsProfileEditing(true)}
+                                        type="button"
+                                    >
+                                        Редактировать
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+                        {isProfileEditing && (
+                            <form className="account-auth-form" onSubmit={(event) => {
+                                event.preventDefault();
+                                void handleSaveProfile();
+                            }}>
+                                <label>
+                                    Имя
+                                    <input
+                                        autoComplete="name"
+                                        onChange={(event) => setEditName(event.target.value)}
+                                        placeholder="Иван Петров"
+                                        type="text"
+                                        value={editName}
+                                    />
+                                </label>
+                                <label>
+                                    Email
+                                    <input
+                                        autoComplete="email"
+                                        onChange={(event) => setEditEmail(event.target.value)}
+                                        placeholder="you@example.com"
+                                        type="email"
+                                        value={editEmail}
+                                    />
+                                </label>
+                                {profileEditError.length > 0 && <p className="account-auth-error">{profileEditError}</p>}
+                                <div className="account-card-actions account-edit-actions">
+                                    <button
+                                        className="account-inline-link account-inline-link-button"
+                                        onClick={() => {
+                                            setIsProfileEditing(false);
+                                            setProfileEditError("");
+                                            setEditName(profile.name);
+                                            setEditEmail(profile.email);
+                                        }}
+                                        type="button"
+                                    >
+                                        Отменить
+                                    </button>
+                                    <button className="account-auth-submit" disabled={isSavingProfile} type="submit">
+                                        {isSavingProfile ? "Сохраняем..." : "Сохранить"}
+                                    </button>
+                                </div>
+                            </form>
+                        )}
+                        <div className="account-grid account-profile-grid account-profile-meta">
                             <div><strong>Subject:</strong> {profile.subject}</div>
-                            <div><strong>Имя:</strong> {profile.name}</div>
-                            <div><strong>Email:</strong> {profile.email}</div>
                             {hasServiceRole && <div><strong>Роли:</strong> {profile.roles.join(", ") || "—"}</div>}
                         </div>
                     </section>
@@ -350,9 +511,11 @@ export function AccountView() {
                             <div className="account-card-header">
                                 <h2>Донаты</h2>
                                 <div className="account-card-actions">
-                                    <button disabled={isCreatingDonation} onClick={() => void handleCreateDonation()} type="button">
-                                        {isCreatingDonation ? "Создаём..." : "Поддержать проект (300 ₽)"}
-                                    </button>
+                                    {!hasServiceRole && (
+                                        <button disabled={isCreatingDonation} onClick={() => void handleCreateDonation()} type="button">
+                                            {isCreatingDonation ? "Создаём..." : "Поддержать проект (300 ₽)"}
+                                        </button>
+                                    )}
                                     <button onClick={exportDonationsCsv} type="button">Экспорт CSV</button>
                                     <button onClick={exportDonationsPdf} type="button">Экспорт PDF</button>
                                 </div>
@@ -364,7 +527,9 @@ export function AccountView() {
                                             <div>
                                                 <strong>{item.amount} {item.currency}</strong> · {item.status} · {new Date(item.createdAt).toLocaleString()}
                                             </div>
-                                            <button onClick={() => void handleCreateDonation(item)} type="button">Повторить донат</button>
+                                            {!hasServiceRole && (
+                                                <button onClick={() => void handleCreateDonation(item)} type="button">Повторить донат</button>
+                                            )}
                                         </li>
                                     ))}
                                 </ul>
@@ -373,6 +538,7 @@ export function AccountView() {
 
                         <section className="account-card">
                             <h2>Избранное</h2>
+                            <p>Список материалов портала, которые пользователь пометил для быстрого доступа.</p>
                             {favorites.length === 0 ? <p>Избранное пока пусто.</p> : (
                                 <ul className="account-list">
                                     {favorites.map((item) => (
@@ -384,18 +550,26 @@ export function AccountView() {
                             )}
                         </section>
 
-                        <section className="account-card account-card-full">
-                            <h2>Мои чаты</h2>
-                            {chats.length === 0 ? <p>Чатов пока нет.</p> : (
-                                <ul className="account-list">
-                                    {chats.map((item) => (
-                                        <li key={item.chatId}>
-                                            <strong>{item.messageCount} сообщений</strong> · {new Date(item.createdAt).toLocaleString()} · {item.lastMessagePreview ?? "без превью"}
-                                        </li>
-                                    ))}
-                                </ul>
-                            )}
-                        </section>
+                        {hasAdminRole && (
+                            <section className="account-card account-card-full">
+                                <h2>Аналитика ИИ-чатов</h2>
+                                <p>Сводные показатели по пользовательским сессиям ИИ-чата в текущем аккаунте.</p>
+                                <div className="account-admin-kpi-grid account-chat-kpi-grid">
+                                    <article className="account-card account-chat-kpi-card">
+                                        <h3>Создано чатов</h3>
+                                        <p className="account-admin-kpi-value">{totalChatsCreated}</p>
+                                    </article>
+                                    <article className="account-card account-chat-kpi-card">
+                                        <h3>Сообщений в чатах</h3>
+                                        <p className="account-admin-kpi-value">{totalChatMessages}</p>
+                                    </article>
+                                    <article className="account-card account-chat-kpi-card">
+                                        <h3>Оценка потребления токенов</h3>
+                                        <p className="account-admin-kpi-value">{estimatedTokenConsumption}</p>
+                                    </article>
+                                </div>
+                            </section>
+                        )}
                     </div>
                 </>
             )}

@@ -1,4 +1,4 @@
-export var NavigationTree =  [["/projects", "Проекты"],
-        ["/docs", "Документация и инструкции"],
+export var NavigationTree =  [["/docs", "Откройте для себя poprog"],
+        ["/projects", "Проекты"],
         ["/publications", "Публикации"],
         ["/works", "Дипломные работы и диссертации"]]
