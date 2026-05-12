@@ -1,10 +1,37 @@
 <!doctype html>
-<html lang="en">
+<html lang="ru">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link id="app-favicon" rel="icon" type="image/svg+xml" href="/favicon-dark.svg" />
+    <link rel="alternate icon" type="image/x-icon" href="/favicon.ico" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>iaie-students-knowledge-base</title>
+    <title>PoProg Knowledge Base</title>
+    <script>
+      (() => {
+        const darkQuery = window.matchMedia("(prefers-color-scheme: dark)");
+        const root = document.documentElement;
+        const faviconEl = document.getElementById("app-favicon");
+        if (!faviconEl) return;
+
+        const isDarkTheme = () => {
+          const attr = root.getAttribute("data-theme");
+          if (attr === "dark") return true;
+          if (attr === "light") return false;
+          return darkQuery.matches;
+        };
+
+        const setFavicon = () => {
+          faviconEl.setAttribute("href", isDarkTheme() ? "/favicon-light.svg" : "/favicon-dark.svg");
+        };
+
+        setFavicon();
+        darkQuery.addEventListener("change", setFavicon);
+        new MutationObserver(setFavicon).observe(root, {
+          attributes: true,
+          attributeFilter: ["data-theme", "class"]
+        });
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

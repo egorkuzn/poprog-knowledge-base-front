@@ -92,6 +92,7 @@ export function Footer() {
                     </div>
                     <Link onClick={handleHashLinkClick("/home#about")} to="/home#about">О нас</Link>
                     <Link to="/donate">Помочь проекту</Link>
+                    <Link to="/news">Новости</Link>
                     <Link to="/support">Поддержка</Link>
                     <Link to="/contact">Свяжитесь с нами</Link>
                     <p>© poprog 2026</p>

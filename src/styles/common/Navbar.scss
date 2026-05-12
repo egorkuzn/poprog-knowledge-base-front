@@ -416,12 +416,14 @@
   margin-top: 14px;
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  grid-auto-rows: 1fr;
   gap: 12px;
 }
 
 .site-projects-news-card,
 .site-projects-success-card {
-  min-height: 128px;
+  min-height: 136px;
+  height: 100%;
   border-radius: 12px;
   background: #e8e8ed;
 }
@@ -446,6 +448,15 @@
 .site-projects-success-copy {
   display: grid;
   gap: 8px;
+  align-content: center;
+}
+
+.site-projects-news-copy span,
+.site-projects-success-copy span {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
 }
 
 .site-projects-success-card {

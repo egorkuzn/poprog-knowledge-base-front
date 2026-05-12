@@ -16,10 +16,13 @@ import {AdminDonationsView} from "./view/pages/account/AdminDonationsView";
 import {DonateView} from "./view/pages/donate/DonateView";
 import {SupportView} from "./view/pages/support/SupportView";
 import {ContactView} from "./view/pages/contact/ContactView";
+import {NewsView} from "./view/pages/news/NewsView";
 import {NotFoundView} from "./view/pages/not-found/NotFoundView";
 import {ExternalFallbackView} from "./view/pages/not-found/ExternalFallbackView";
 import {CookiesView, PrivacyView, TermsView} from "./view/pages/legal/LegalViews";
 import { createBrowserRouter} from "react-router-dom";
+
+const routerBasename = import.meta.env.BASE_URL === "/" ? undefined : import.meta.env.BASE_URL.replace(/\/$/, "");
 
 const router = createBrowserRouter([
     {
@@ -75,6 +78,10 @@ const router = createBrowserRouter([
         element: <PublicationsView/>
     },
     {
+        path: "/news",
+        element: <NewsView/>
+    },
+    {
         path: "/video",
         element: <VideoView/>
     },
@@ -102,7 +109,9 @@ const router = createBrowserRouter([
         path: "*",
         element: <ExternalFallbackView/>
     }
-]);
+], {
+    basename: routerBasename
+});
 
 ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(  
   <React.StrictMode>

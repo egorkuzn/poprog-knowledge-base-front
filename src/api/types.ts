@@ -42,6 +42,17 @@ export interface SearchResponse {
     items: SearchResultItem[]
 }
 
+export interface Lab19NewsItemResponse {
+    id: number
+    title: string
+    sourceUrl: string
+    sourcePage: string
+    year: number | null
+    contentType: string | null
+    materialKind: string
+    status: string
+}
+
 export interface ProblemDetail {
     type?: string
     title?: string

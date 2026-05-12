@@ -7,6 +7,7 @@
 .account-hero {
   margin: 0 0 16px;
   width: 100%;
+  box-sizing: border-box;
   padding: 18px 20px;
   border-radius: 16px;
   background: #ffffff;
@@ -129,8 +130,19 @@
   font-weight: 700;
 }
 
+.account-inline-link-button {
+  border: 0;
+  background: transparent;
+  padding: 0;
+  text-decoration: underline;
+  cursor: pointer;
+  min-height: auto;
+}
+
 .account-card {
   margin: 0 0 14px;
+  width: 100%;
+  box-sizing: border-box;
   padding: 16px 18px;
   border-radius: 16px;
   border: 1px solid #dee3ef;
@@ -157,6 +169,20 @@
   gap: 8px 14px;
 }
 
+.account-profile-grid {
+  gap: 14px 20px;
+}
+
+.account-profile-meta {
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid #e5eaf3;
+}
+
+.account-grid-link-row {
+  grid-column: 1 / -1;
+}
+
 .account-card-header {
   display: flex;
   align-items: center;
@@ -171,6 +197,10 @@
   gap: 8px;
 }
 
+.account-edit-actions {
+  justify-content: flex-start;
+}
+
 .account-card-header button {
   border: 0;
   border-radius: 999px;
@@ -183,6 +213,79 @@
 }
 
 .account-card-header button:disabled {
+  opacity: 0.7;
+  cursor: wait;
+}
+
+.account-card-header .account-danger-action-button {
+  background: #b52222;
+}
+
+.account-card-header .account-danger-action-button:hover {
+  background: #9f1b1b;
+}
+
+.account-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1200;
+  background: rgba(18, 23, 36, 0.56);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+
+.account-modal {
+  width: min(520px, calc(100vw - 32px));
+  background: #ffffff;
+  border: 1px solid #d8deeb;
+  border-radius: 16px;
+  padding: 18px 18px 16px;
+  box-sizing: border-box;
+}
+
+.account-modal h3 {
+  margin: 0;
+  font-size: 1.35rem;
+}
+
+.account-modal p {
+  margin: 10px 0 0;
+  color: #4d5670;
+}
+
+.account-modal-actions {
+  margin-top: 16px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.account-modal-actions button {
+  border: 0;
+  border-radius: 999px;
+  min-height: 40px;
+  padding: 0 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.account-modal-secondary-button {
+  background: #ecf0fb;
+  color: #223252;
+}
+
+.account-modal-danger-button {
+  background: #b52222;
+  color: #ffffff;
+}
+
+.account-modal-danger-button:hover {
+  background: #9f1b1b;
+}
+
+.account-modal-actions button:disabled {
   opacity: 0.7;
   cursor: wait;
 }
@@ -246,6 +349,26 @@
   font-size: clamp(1.6rem, 2vw, 2rem);
   font-weight: 800;
   color: #153b9d;
+}
+
+.account-chat-kpi-grid {
+  grid-template-columns: repeat(3, minmax(180px, 1fr));
+}
+
+.account-chat-kpi-card {
+  display: flex;
+  flex-direction: column;
+  min-height: 210px;
+}
+
+.account-chat-kpi-card h3 {
+  margin: 0;
+  min-height: 96px;
+}
+
+.account-chat-kpi-card .account-admin-kpi-value {
+  margin-top: auto;
+  line-height: 1;
 }
 
 .account-admin-table-wrap {
