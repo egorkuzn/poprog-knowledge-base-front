@@ -3,6 +3,7 @@ import type {
     AiAssistantChatRequest,
     AiAssistantChatResponse,
     ChatHistoryResponse,
+    Lab19NewsItemResponse,
     PublicationsByDateDto,
     SearchResponse,
     WorksByProjectTypeDto
@@ -54,4 +55,22 @@ export function assistantChat(request: AiAssistantChatRequest): Promise<AiAssist
 
 export function getAssistantChatHistory(chatId: string): Promise<ChatHistoryResponse> {
     return getJson<ChatHistoryResponse>(`/api/assistant/chats/${chatId}/messages`);
+}
+
+export function getLab19News(params: {
+    q?: string
+    year?: number
+    kind?: string
+    limit?: number
+    offset?: number
+}): Promise<Lab19NewsItemResponse[]> {
+    const searchParams = new URLSearchParams();
+    if (params.q) searchParams.set("q", params.q);
+    if (typeof params.year === "number") searchParams.set("year", params.year.toString());
+    if (params.kind) searchParams.set("kind", params.kind);
+    if (typeof params.limit === "number") searchParams.set("limit", params.limit.toString());
+    if (typeof params.offset === "number") searchParams.set("offset", params.offset.toString());
+
+    const qs = searchParams.toString();
+    return getJson<Lab19NewsItemResponse[]>(`/api/lab-19/news${qs ? `?${qs}` : ""}`);
 }

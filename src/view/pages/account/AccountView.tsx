@@ -20,8 +20,8 @@ import type {
     AccountProfileResponse
 } from "../../../api/types";
 import {
-    clearLocalAuthSession,
     createLocalAuthSession,
+    deleteLocalAuthCurrentAccount,
     findLocalAuthUserByCredentials,
     readLocalAuthSession,
     registerLocalAuthUser,
@@ -73,6 +73,9 @@ export function AccountView() {
     const [isProfileEditing, setIsProfileEditing] = useState(false);
     const [isSavingProfile, setIsSavingProfile] = useState(false);
     const [profileEditError, setProfileEditError] = useState("");
+    const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+    const [isDeletingAccount, setIsDeletingAccount] = useState(false);
+    const [deleteAccountError, setDeleteAccountError] = useState("");
 
     const hasServiceRole = (profile?.roles ?? []).some((role) => serviceRoles.has(role.toUpperCase()));
     const hasAdminRole = (profile?.roles ?? []).some((role) => role.toUpperCase() === "ADMIN");
@@ -220,14 +223,47 @@ export function AccountView() {
         navigate("/account", {replace: true});
     };
 
-    const handleLogout = () => {
-        clearLocalAuthSession();
-        setProfile(null);
-        setError("");
-        setAuthPassword("");
-        setIsProfileEditing(false);
-        setProfileEditError("");
-        navigate("/account?mode=login", {replace: true});
+    const openDeleteAccountModal = () => {
+        setDeleteAccountError("");
+        setIsDeleteModalOpen(true);
+    };
+
+    const closeDeleteAccountModal = () => {
+        if (isDeletingAccount) {
+            return;
+        }
+        setDeleteAccountError("");
+        setIsDeleteModalOpen(false);
+    };
+
+    const handleDeleteAccount = () => {
+        if (!profile || hasAdminRole || isDeletingAccount) {
+            return;
+        }
+
+        setIsDeletingAccount(true);
+        setDeleteAccountError("");
+
+        try {
+            const isDeleted = deleteLocalAuthCurrentAccount();
+            if (!isDeleted) {
+                setDeleteAccountError("Не удалось удалить аккаунт. Попробуйте войти заново.");
+                return;
+            }
+
+            setProfile(null);
+            setChats([]);
+            setFavorites([]);
+            setDonations([]);
+            setError("");
+            setAuthPassword("");
+            setIsProfileEditing(false);
+            setProfileEditError("");
+            setIsDeleteModalOpen(false);
+            navigate("/account?mode=login", {replace: true});
+        } finally {
+            setIsDeletingAccount(false);
+        }
     };
 
     const handleSaveProfile = async () => {
@@ -434,7 +470,11 @@ export function AccountView() {
                                         Аналитика пожертвований
                                     </button>
                                 )}
-                                <button onClick={handleLogout} type="button">Выйти</button>
+                                {!hasAdminRole && (
+                                    <button className="account-danger-action-button" onClick={openDeleteAccountModal} type="button">
+                                        Удалить аккаунт
+                                    </button>
+                                )}
                             </div>
                         </div>
                         {!isProfileEditing && (
@@ -571,6 +611,35 @@ export function AccountView() {
                             </section>
                         )}
                     </div>
+
+                    {isDeleteModalOpen && (
+                        <div className="account-modal-backdrop" onClick={closeDeleteAccountModal} role="presentation">
+                            <section
+                                aria-labelledby="account-delete-title"
+                                aria-modal="true"
+                                className="account-modal"
+                                onClick={(event) => event.stopPropagation()}
+                                role="dialog"
+                            >
+                                <h3 id="account-delete-title">Удалить аккаунт?</h3>
+                                <p>Это действие необратимо: профиль и локальная сессия будут удалены.</p>
+                                {deleteAccountError.length > 0 && <p className="account-auth-error">{deleteAccountError}</p>}
+                                <div className="account-modal-actions">
+                                    <button className="account-modal-secondary-button" onClick={closeDeleteAccountModal} type="button">
+                                        Отмена
+                                    </button>
+                                    <button
+                                        className="account-modal-danger-button"
+                                        disabled={isDeletingAccount}
+                                        onClick={handleDeleteAccount}
+                                        type="button"
+                                    >
+                                        {isDeletingAccount ? "Удаляем..." : "Удалить аккаунт"}
+                                    </button>
+                                </div>
+                            </section>
+                        </div>
+                    )}
                 </>
             )}
         </main>

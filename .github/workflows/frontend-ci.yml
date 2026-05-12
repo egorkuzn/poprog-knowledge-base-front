@@ -1,20 +1,26 @@
-name: Frontend CI
+name: Frontend CI/CD
 
 on:
   push:
     branches:
       - main
-      - master
   pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+concurrency:
+  group: frontend-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  IMAGE_NAME: ghcr.io/${{ github.repository_owner }}/poprog-knowledge-base-front
 
 jobs:
   build-test:
     runs-on: ubuntu-latest
-
-    defaults:
-      run:
-        working-directory: .
-
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -29,8 +35,97 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Test
+      - name: Typecheck
         run: npm run test
 
       - name: Build
-        run: npm run build
+        run: npm run build -- --base=/portal/
+        env:
+          VITE_API_BASE_URL: /portal-api
+          VITE_DEBUG_HEADERS_ENABLED: "false"
+          VITE_RIDE_CONSOLE_URL: /admin/master/console/
+          VITE_RIDE_SIGNUP_URL: /account
+
+  docker-deploy:
+    needs: build-test
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Login to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: |
+            ${{ env.IMAGE_NAME }}:${{ github.sha }}
+            ${{ env.IMAGE_NAME }}:latest
+          build-args: |
+            VITE_API_BASE_URL=/portal-api
+            VITE_DEBUG_HEADERS_ENABLED=false
+            VITE_RIDE_CONSOLE_URL=/admin/master/console/
+            VITE_RIDE_SIGNUP_URL=/account
+
+      - name: Prepare SSH
+        run: |
+          mkdir -p ~/.ssh
+          printf '%s\n' "${{ secrets.DEPLOY_SSH_PRIVATE_KEY }}" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh-keyscan -H "${{ secrets.DEPLOY_HOST }}" >> ~/.ssh/known_hosts
+
+      - name: Deploy frontend only
+        env:
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+          IMAGE: ${{ env.IMAGE_NAME }}:${{ github.sha }}
+          GHCR_USER: ${{ github.actor }}
+          GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          ssh -i ~/.ssh/deploy_key "$DEPLOY_USER@$DEPLOY_HOST" \
+            "IMAGE='$IMAGE' GHCR_USER='$GHCR_USER' GHCR_TOKEN='$GHCR_TOKEN' bash -s" <<'REMOTE'
+          set -euo pipefail
+          mkdir -p ~/frontend
+          cd ~/frontend
+          cat > docker-compose.yml <<EOF2
+          services:
+            portal-frontend:
+              image: ${IMAGE}
+              container_name: poprog-portal-frontend
+              restart: unless-stopped
+              ports:
+                - "127.0.0.1:18083:80"
+          EOF2
+          printf '%s' "$GHCR_TOKEN" | docker login ghcr.io -u "$GHCR_USER" --password-stdin >/dev/null
+          docker compose pull portal-frontend
+          docker compose up -d portal-frontend
+          docker logout ghcr.io >/dev/null
+          REMOTE
+
+      - name: Apply nginx routing
+        env:
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+        run: |
+          scp -i ~/.ssh/deploy_key deploy/poprog-edge-nginx.conf "$DEPLOY_USER@$DEPLOY_HOST:/tmp/poprog-edge-nginx.conf"
+          ssh -i ~/.ssh/deploy_key "$DEPLOY_USER@$DEPLOY_HOST" <<'REMOTE'
+          set -euo pipefail
+          sudo cp /etc/nginx/sites-available/auth-ride /etc/nginx/sites-available/auth-ride.$(date +%Y%m%d%H%M%S)
+          sudo tee /etc/nginx/sites-available/auth-ride >/dev/null < /tmp/poprog-edge-nginx.conf
+          sudo nginx -t
+          sudo systemctl reload nginx
+          REMOTE
+
+      - name: Smoke check frontend
+        run: |
+          curl -fsSIL "http://${{ secrets.DEPLOY_HOST }}/portal/"
+          curl -fsSI "http://${{ secrets.DEPLOY_HOST }}/portal/assets/" || true

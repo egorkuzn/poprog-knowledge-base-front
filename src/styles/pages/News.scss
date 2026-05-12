@@ -1,0 +1,138 @@
+.news-page {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 16px 48px;
+}
+
+.news-header {
+  display: flex;
+  gap: 24px;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin: 12px 0 18px;
+  flex-wrap: wrap;
+}
+
+.news-subtitle {
+  margin: 6px 0 0;
+  color: rgba(255, 255, 255, 0.8);
+  max-width: 720px;
+}
+
+.news-filters {
+  display: flex;
+  gap: 12px;
+  align-items: flex-end;
+  flex-wrap: wrap;
+}
+
+.news-filter {
+  display: grid;
+  gap: 6px;
+  min-width: 220px;
+}
+
+.news-filter span {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.75);
+}
+
+.news-filter input {
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  background: rgba(10, 12, 16, 0.55);
+  color: #fff;
+  outline: none;
+}
+
+.news-filter input:focus {
+  border-color: rgba(255, 255, 255, 0.28);
+}
+
+.news-grid {
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  gap: 14px;
+}
+
+.news-card {
+  grid-column: span 6;
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(12, 14, 18, 0.6);
+  padding: 16px;
+  overflow: hidden;
+}
+
+.news-card-meta {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 12px;
+}
+
+.news-card-source {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.news-card-title {
+  margin: 10px 0 0;
+  font-size: 18px;
+  line-height: 1.25;
+}
+
+.news-card-title a {
+  color: #fff;
+  text-decoration: none;
+}
+
+.news-card-title a:hover {
+  text-decoration: underline;
+}
+
+.news-card-actions {
+  margin-top: 12px;
+}
+
+.news-card-link {
+  display: inline-flex;
+  gap: 8px;
+  align-items: center;
+  text-decoration: none;
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.news-card-link:hover {
+  text-decoration: underline;
+}
+
+.news-more {
+  display: flex;
+  justify-content: center;
+  margin-top: 18px;
+}
+
+.news-more-button {
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: rgba(255, 255, 255, 0.06);
+  color: #fff;
+  border-radius: 12px;
+  padding: 10px 14px;
+  cursor: pointer;
+}
+
+.news-more-button:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+@media (max-width: 900px) {
+  .news-card {
+    grid-column: span 12;
+  }
+}
+

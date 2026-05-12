@@ -17,8 +17,15 @@ import searchIcon from "../../../assets/home/icons/search.svg";
 import accountIcon from "../../../assets/home/icons/account.svg";
 import supportIcon from "../../../assets/home/icons/support.svg";
 import arrowRightAltIcon from "../../../assets/home/icons/arrow-right-alt.svg";
-import caseOneImage from "../../../assets/home/cases/case-1.png";
-import caseTwoImage from "../../../assets/home/cases/case-2.png";
+import panelBottomDefaultImage from "../../../assets/home/panel-bottom/default.svg";
+import panelBottomWhatsNewImage from "../../../assets/home/panel-bottom/whats-new.svg";
+import panelBottomSuccessImage from "../../../assets/home/panel-bottom/success.svg";
+import panelBottomWorksImage from "../../../assets/home/panel-bottom/works.svg";
+import panelBottomSupportImage from "../../../assets/home/panel-bottom/support.svg";
+import panelBottomContactImage from "../../../assets/home/panel-bottom/contact.svg";
+import panelBottomMarketImage from "../../../assets/home/panel-bottom/market.svg";
+import panelBottomRideImage from "../../../assets/home/panel-bottom/ride.svg";
+import panelBottomEdtlImage from "../../../assets/home/panel-bottom/edtl.svg";
 
 type SearchState = "idle" | "loading" | "ready" | "error";
 type PanelKind = "projects" | "discover";
@@ -314,6 +321,25 @@ function getPanelItemPath(item: ProjectLeafItem, panelKind: PanelKind): string {
         return "/docs";
     }
     return `/projects/${item.slug}`;
+}
+
+const panelBottomImageBySlug: Record<string, string> = {
+    "languages-whats-new": panelBottomWhatsNewImage,
+    "ride-whats-new": panelBottomWhatsNewImage,
+    "edtl-whats-new": panelBottomWhatsNewImage,
+    "distributed-whats-new": panelBottomWhatsNewImage,
+    "analysis-whats-new": panelBottomWhatsNewImage,
+    "success-stories": panelBottomSuccessImage,
+    "works": panelBottomWorksImage,
+    "support": panelBottomSupportImage,
+    "contact": panelBottomContactImage,
+    "market": panelBottomMarketImage,
+    "ride": panelBottomRideImage,
+    "edtl": panelBottomEdtlImage
+};
+
+function getPanelBottomImage(item: ProjectLeafItem): string {
+    return panelBottomImageBySlug[item.slug] ?? panelBottomDefaultImage;
 }
 
 function resolveSearchResultNavigation(item: SearchResultItem): { externalUrl?: string, internalPath: string } {
@@ -1028,7 +1054,7 @@ export function Navbar() {
 
                                 <div className="site-projects-panel-bottom-row">
                                     <Link className="site-projects-news-card site-projects-hover-card" onClick={closeProjectsPanel} to={getPanelItemPath(newsProjectItem, activePanelKind)}>
-                                        <img alt="" className="site-projects-news-image" src={caseOneImage}/>
+                                        <img alt="" className="site-projects-news-image" src={getPanelBottomImage(newsProjectItem)}/>
                                         <div className="site-projects-news-copy">
                                             <strong>{newsProjectItem.title}</strong>
                                             <span>{panelDescriptions(newsProjectItem)}</span>
@@ -1037,7 +1063,7 @@ export function Navbar() {
                                     </Link>
 
                                     <Link className="site-projects-success-card site-projects-hover-card" onClick={closeProjectsPanel} to={getPanelItemPath(successProjectItem, activePanelKind)}>
-                                        <img alt="" className="site-projects-success-image" src={caseTwoImage}/>
+                                        <img alt="" className="site-projects-success-image" src={getPanelBottomImage(successProjectItem)}/>
                                         <div className="site-projects-success-copy">
                                             <strong>{successProjectItem.title}</strong>
                                             <span>{panelDescriptions(successProjectItem)}</span>

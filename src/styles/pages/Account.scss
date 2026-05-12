@@ -217,6 +217,79 @@
   cursor: wait;
 }
 
+.account-card-header .account-danger-action-button {
+  background: #b52222;
+}
+
+.account-card-header .account-danger-action-button:hover {
+  background: #9f1b1b;
+}
+
+.account-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1200;
+  background: rgba(18, 23, 36, 0.56);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+
+.account-modal {
+  width: min(520px, calc(100vw - 32px));
+  background: #ffffff;
+  border: 1px solid #d8deeb;
+  border-radius: 16px;
+  padding: 18px 18px 16px;
+  box-sizing: border-box;
+}
+
+.account-modal h3 {
+  margin: 0;
+  font-size: 1.35rem;
+}
+
+.account-modal p {
+  margin: 10px 0 0;
+  color: #4d5670;
+}
+
+.account-modal-actions {
+  margin-top: 16px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.account-modal-actions button {
+  border: 0;
+  border-radius: 999px;
+  min-height: 40px;
+  padding: 0 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.account-modal-secondary-button {
+  background: #ecf0fb;
+  color: #223252;
+}
+
+.account-modal-danger-button {
+  background: #b52222;
+  color: #ffffff;
+}
+
+.account-modal-danger-button:hover {
+  background: #9f1b1b;
+}
+
+.account-modal-actions button:disabled {
+  opacity: 0.7;
+  cursor: wait;
+}
+
 .account-list {
   margin: 0;
   padding-left: 18px;

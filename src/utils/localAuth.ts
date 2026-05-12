@@ -143,6 +143,24 @@ export function clearLocalAuthSession(): void {
     emitAuthChanged();
 }
 
+export function deleteLocalAuthCurrentAccount(): boolean {
+    const currentSession = readLocalAuthSession();
+    if (!currentSession) {
+        return false;
+    }
+
+    const currentEmailNormalized = currentSession.email.trim().toLowerCase();
+    const users = readLocalAuthUsersRaw();
+    const filteredUsers = users.filter((user) => user.email.toLowerCase() !== currentEmailNormalized);
+
+    if (filteredUsers.length !== users.length) {
+        saveLocalAuthUsers(filteredUsers);
+    }
+
+    clearLocalAuthSession();
+    return true;
+}
+
 export function createLocalAuthSession(name: string, email: string, mode: AuthMode, roles: string[] = ["USER"]): LocalAuthSession {
     const normalizedEmail = email.trim().toLowerCase();
     const normalizedName = name.trim();
