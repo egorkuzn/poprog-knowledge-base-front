@@ -3,6 +3,7 @@ FROM node:22-alpine AS build
 WORKDIR /app
 
 COPY package.json package-lock.json ./
+COPY scripts/fix-bufbuild-protobuf-cjs.cjs ./scripts/
 RUN npm ci
 
 COPY . .
