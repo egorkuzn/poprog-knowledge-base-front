@@ -39,7 +39,7 @@ jobs:
         run: npm run test
 
       - name: Build
-        run: npm run build -- --base=/portal/
+        run: npm run build -- --base=/
         env:
           VITE_API_BASE_URL: /portal-api
           VITE_DEBUG_HEADERS_ENABLED: "false"
@@ -127,5 +127,5 @@ jobs:
 
       - name: Smoke check frontend
         run: |
-          curl -fsSIL "http://${{ secrets.DEPLOY_HOST }}/portal/"
-          curl -fsSI "http://${{ secrets.DEPLOY_HOST }}/portal/assets/" || true
+          curl -fsSIL "http://${{ secrets.DEPLOY_HOST }}/"
+          curl -fsSI "http://${{ secrets.DEPLOY_HOST }}/assets/" || true
