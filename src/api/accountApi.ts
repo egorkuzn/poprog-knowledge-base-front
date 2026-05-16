@@ -5,6 +5,7 @@ import type {
     AccountFavoriteResponse,
     AccountProfileResponse,
     CreateDonationRequest,
+    RegisterAccountRequest,
     UpdateAccountProfileRequest,
     UpdateDonationStatusRequest,
     UpsertFavoriteRequest
@@ -12,6 +13,10 @@ import type {
 
 export function getAccountProfile(): Promise<AccountProfileResponse> {
     return getJson<AccountProfileResponse>("/api/account/profile");
+}
+
+export function registerAccount(request: RegisterAccountRequest): Promise<AccountProfileResponse> {
+    return postJson<AccountProfileResponse, RegisterAccountRequest>("/api/account/register", request);
 }
 
 export function updateAccountProfile(request: UpdateAccountProfileRequest): Promise<AccountProfileResponse> {

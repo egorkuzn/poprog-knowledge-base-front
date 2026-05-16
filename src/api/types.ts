@@ -139,6 +139,12 @@ export interface UpdateAccountProfileRequest {
     email: string
 }
 
+export interface RegisterAccountRequest {
+    name: string
+    email: string
+    password: string
+}
+
 export interface AccountChatSummaryResponse {
     chatId: string
     createdAt: string
