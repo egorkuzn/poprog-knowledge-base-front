@@ -1,5 +1,5 @@
 import {useMemo, useState} from "react";
-import {Link} from "react-router-dom";
+import {Link, useNavigate} from "react-router-dom";
 import BodyView from "../BodyView";
 import "../../../styles/pages/Home.scss";
 import {submitSiteFeedback, type SiteFeedbackChoice} from "../../../api/siteFeedbackApi";
@@ -58,7 +58,6 @@ const feedbackMessages: Record<SiteFeedbackChoice, string> = {
     yes: "Отлично, спасибо за положительную оценку.",
     no: "Спасибо за честный ответ. Мы учтём это и улучшим портал."
 };
-const siteQualityTestDraftPath = "/tests/site-quality-test-draft.md";
 
 export function Home() {
     const [activeCaseIndex, setActiveCaseIndex] = useState(1);
@@ -73,6 +72,7 @@ export function Home() {
     const [isFeedbackSubmitting, setIsFeedbackSubmitting] = useState(false);
     const [feedbackError, setFeedbackError] = useState("");
     const [isFeedbackTestModalOpen, setIsFeedbackTestModalOpen] = useState(false);
+    const navigate = useNavigate();
     const visibleCards = useMemo(() => (
         caseCards
             .map((card, index) => ({
@@ -225,8 +225,8 @@ export function Home() {
                                 </button>
                                 <button
                                     onClick={() => {
-                                        window.open(siteQualityTestDraftPath, "_blank");
                                         setIsFeedbackTestModalOpen(false);
+                                        navigate("/feedback/site-quality");
                                     }}
                                     type="button"
                                 >

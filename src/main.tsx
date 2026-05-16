@@ -17,6 +17,7 @@ import {DonateView} from "./view/pages/donate/DonateView";
 import {SupportView} from "./view/pages/support/SupportView";
 import {ContactView} from "./view/pages/contact/ContactView";
 import {NewsView} from "./view/pages/news/NewsView";
+import {SiteQualitySurveyView} from "./view/pages/feedback/SiteQualitySurveyView";
 import {NotFoundView} from "./view/pages/not-found/NotFoundView";
 import {ExternalFallbackView} from "./view/pages/not-found/ExternalFallbackView";
 import {CookiesView, PrivacyView, TermsView} from "./view/pages/legal/LegalViews";
@@ -99,6 +100,10 @@ const router = createBrowserRouter([
     {
         path: "/chat",
         element: <ChatView/>
+    },
+    {
+        path: "/feedback/site-quality",
+        element: <SiteQualitySurveyView/>
     },
     {
         path: "/privacy",

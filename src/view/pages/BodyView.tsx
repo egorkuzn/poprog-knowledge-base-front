@@ -19,10 +19,29 @@ function AnalyticsRouteTracker() {
     return null;
 }
 
+function ScrollToTopOnRouteChange() {
+    const location = useLocation();
+
+    useEffect(() => {
+        if (location.hash) {
+            return;
+        }
+
+        window.scrollTo({
+            top: 0,
+            left: 0,
+            behavior: "auto"
+        });
+    }, [location.pathname, location.search, location.hash]);
+
+    return null;
+}
+
 function BodyView(page: React.ReactNode) {
     return (
         <div className="BodyView">
             <AnalyticsRouteTracker/>
+            <ScrollToTopOnRouteChange/>
             <Navbar/>
             <SiteHashNavigator/>
             {page}
