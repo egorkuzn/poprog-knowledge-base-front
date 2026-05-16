@@ -6,6 +6,9 @@ export interface LocalAuthSession {
     email: string
     roles: string[]
     createdAt: string
+    accessToken?: string
+    refreshToken?: string
+    expiresAt?: number
 }
 
 export interface LocalAuthUser {
@@ -32,7 +35,10 @@ function isLocalAuthSession(value: unknown): value is LocalAuthSession {
         && typeof candidate.name === "string"
         && typeof candidate.email === "string"
         && Array.isArray(candidate.roles)
-        && typeof candidate.createdAt === "string";
+        && typeof candidate.createdAt === "string"
+        && (candidate.accessToken === undefined || typeof candidate.accessToken === "string")
+        && (candidate.refreshToken === undefined || typeof candidate.refreshToken === "string")
+        && (candidate.expiresAt === undefined || typeof candidate.expiresAt === "number");
 }
 
 function isLocalAuthUser(value: unknown): value is LocalAuthUser {
@@ -181,6 +187,12 @@ export function getLocalAuthHeaders(): Record<string, string> {
         return {};
     }
 
+    if (session.accessToken) {
+        return {
+            Authorization: `Bearer ${session.accessToken}`
+        };
+    }
+
     return {
         subject: session.subject,
         email: session.email,
@@ -227,6 +239,117 @@ export function findLocalAuthUserByCredentials(email: string, password: string):
     ));
 
     return user ?? null;
+}
+
+interface KeycloakTokenResponse {
+    access_token: string
+    refresh_token?: string
+    expires_in?: number
+}
+
+interface KeycloakJwtClaims {
+    sub?: string
+    email?: string
+    name?: string
+    preferred_username?: string
+    realm_access?: {
+        roles?: string[]
+    }
+    resource_access?: Record<string, {
+        roles?: string[]
+    }>
+    scope?: string
+}
+
+function resolveKeycloakTokenUrl(): string {
+    const configuredUrl = import.meta.env.VITE_KEYCLOAK_TOKEN_URL?.trim();
+    if (configuredUrl) {
+        return configuredUrl;
+    }
+
+    const configuredBaseUrl = import.meta.env.VITE_KEYCLOAK_BASE_URL?.trim() ?? "";
+    const baseUrl = configuredBaseUrl || (typeof window !== "undefined" ? window.location.origin : "http://localhost:18080");
+    const realm = import.meta.env.VITE_KEYCLOAK_REALM?.trim() || "poprog-portal";
+
+    return `${baseUrl.replace(/\/+$/, "")}/realms/${encodeURIComponent(realm)}/protocol/openid-connect/token`;
+}
+
+function resolveKeycloakClientId(): string {
+    return import.meta.env.VITE_KEYCLOAK_CLIENT_ID?.trim() || "poprog-portal-frontend";
+}
+
+function decodeBase64UrlJson<T>(encoded: string): T {
+    const normalized = encoded.replace(/-/g, "+").replace(/_/g, "/");
+    const padded = normalized.padEnd(Math.ceil(normalized.length / 4) * 4, "=");
+    const json = decodeURIComponent(
+        Array.from(atob(padded))
+            .map((char) => `%${char.charCodeAt(0).toString(16).padStart(2, "0")}`)
+            .join("")
+    );
+    return JSON.parse(json) as T;
+}
+
+function decodeJwtClaims(token: string): KeycloakJwtClaims {
+    const [, payload] = token.split(".");
+    if (!payload) {
+        throw new Error("Keycloak вернул некорректный access token.");
+    }
+    return decodeBase64UrlJson<KeycloakJwtClaims>(payload);
+}
+
+function collectKeycloakRoles(claims: KeycloakJwtClaims, clientId: string): string[] {
+    const roles = new Set<string>(["USER"]);
+
+    claims.realm_access?.roles?.forEach((role) => roles.add(role.toUpperCase()));
+    claims.resource_access?.[clientId]?.roles?.forEach((role) => roles.add(role.toUpperCase()));
+    claims.scope?.split(/\s+/).forEach((scope) => {
+        const normalized = scope.trim().toUpperCase();
+        if (normalized) {
+            roles.add(normalized);
+        }
+    });
+
+    return Array.from(roles);
+}
+
+export async function loginKeycloakAccount(email: string, password: string): Promise<LocalAuthSession> {
+    const clientId = resolveKeycloakClientId();
+    const body = new URLSearchParams({
+        grant_type: "password",
+        client_id: clientId,
+        username: email.trim(),
+        password
+    });
+
+    const response = await fetch(resolveKeycloakTokenUrl(), {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/x-www-form-urlencoded"
+        },
+        body
+    });
+
+    if (!response.ok) {
+        throw new Error("Неверный логин или пароль.");
+    }
+
+    const tokenResponse = await response.json() as KeycloakTokenResponse;
+    const claims = decodeJwtClaims(tokenResponse.access_token);
+    const normalizedEmail = claims.email?.trim() || email.trim().toLowerCase();
+    const displayName = claims.name?.trim()
+        || claims.preferred_username?.trim()
+        || normalizedEmail;
+
+    return {
+        subject: claims.sub?.trim() || normalizedEmail,
+        name: displayName,
+        email: normalizedEmail,
+        roles: collectKeycloakRoles(claims, clientId),
+        createdAt: new Date().toISOString(),
+        accessToken: tokenResponse.access_token,
+        refreshToken: tokenResponse.refresh_token,
+        expiresAt: tokenResponse.expires_in ? Date.now() + tokenResponse.expires_in * 1000 : undefined
+    };
 }
 
 export function updateLocalAuthSessionProfile(name: string, email: string): LocalAuthSession | null {

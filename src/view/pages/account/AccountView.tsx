@@ -24,6 +24,8 @@ import {
     createLocalAuthSession,
     deleteLocalAuthCurrentAccount,
     findLocalAuthUserByCredentials,
+    loginKeycloakAccount,
+    localAuthChangedEventName,
     readLocalAuthSession,
     registerLocalAuthUser,
     saveLocalAuthSession,
@@ -88,6 +90,21 @@ export function AccountView() {
     useEffect(() => {
         setAuthMode(getAuthModeFromSearch(location.search));
     }, [location.search]);
+
+    useEffect(() => {
+        const syncProfileFromSession = () => {
+            const session = readLocalAuthSession();
+            setProfile(session ? buildProfileFromSession(session) : null);
+        };
+
+        window.addEventListener("storage", syncProfileFromSession);
+        window.addEventListener(localAuthChangedEventName, syncProfileFromSession as EventListener);
+
+        return () => {
+            window.removeEventListener("storage", syncProfileFromSession);
+            window.removeEventListener(localAuthChangedEventName, syncProfileFromSession as EventListener);
+        };
+    }, []);
 
     useEffect(() => {
         if (!profile) {
@@ -190,13 +207,17 @@ export function AccountView() {
             let session: LocalAuthSession;
 
             if (authMode === "login") {
-                const foundUser = findLocalAuthUserByCredentials(normalizedEmail, authPassword);
-                if (!foundUser) {
-                    setAuthError("Неверный логин или пароль. Для демо используйте developer@dev.com / developer.");
-                    return;
-                }
+                try {
+                    session = await loginKeycloakAccount(normalizedEmail, authPassword);
+                } catch {
+                    const foundUser = findLocalAuthUserByCredentials(normalizedEmail, authPassword);
+                    if (!foundUser) {
+                        setAuthError("Неверный логин или пароль.");
+                        return;
+                    }
 
-                session = createLocalAuthSession(foundUser.name, foundUser.email, "login", foundUser.roles);
+                    session = createLocalAuthSession(foundUser.name, foundUser.email, "login", foundUser.roles);
+                }
             } else {
                 if (normalizedName.length < 2) {
                     setAuthError("Введите имя не короче 2 символов.");
@@ -210,13 +231,17 @@ export function AccountView() {
                         password: authPassword
                     });
 
-                    session = {
-                        subject: registeredProfile.subject,
-                        name: registeredProfile.name,
-                        email: registeredProfile.email,
-                        roles: registeredProfile.roles,
-                        createdAt: new Date().toISOString()
-                    };
+                    try {
+                        session = await loginKeycloakAccount(normalizedEmail, authPassword);
+                    } catch {
+                        session = {
+                            subject: registeredProfile.subject,
+                            name: registeredProfile.name,
+                            email: registeredProfile.email,
+                            roles: registeredProfile.roles,
+                            createdAt: new Date().toISOString()
+                        };
+                    }
                 } catch (registrationError) {
                     if (!isLocalRoleDebugVisible) {
                         setAuthError(registrationError instanceof Error ? registrationError.message : "Не удалось создать аккаунт в Keycloak.");
