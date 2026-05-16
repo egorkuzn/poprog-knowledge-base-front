@@ -41,14 +41,17 @@ function page(worksData: WorksByProjectTypeDto[] | null, isLoading: boolean, err
         <main>
             <Breadcrumbs items={[{label: "Главная", to: "/home"}, {label: "Студенческие работы"}]}/>
             <div className="works-page">
-                <h1>Дипломные работы и диссертации</h1>
+                <section className="works-hero">
+                    <h1>Дипломные работы и диссертации</h1>
+                    <p>Подборка студенческих и исследовательских работ по процесс-ориентированному программированию.</p>
+                </section>
                 {isLoading && <p className="remote-data-state">Загрузка работ...</p>}
                 {error && <p className="remote-data-state remote-data-state-error">Не удалось загрузить работы: {error}</p>}
                 {!isLoading && !error && worksData?.length === 0 && (
                     <p className="remote-data-state">Работы пока не найдены.</p>
                 )}
                 {worksData?.map((worksClassModel: WorksByProjectTypeDto) => (
-                    <div className="works-class section-spacer" id={worksClassModel.hash} key={worksClassModel.hash}>
+                    <section className="works-class section-spacer" id={worksClassModel.hash} key={worksClassModel.hash}>
                         <h2>{worksClassModel.title}</h2>
                         {worksClassModel.works.map((workModel: WorkModel, index: number) => (
                             <div
@@ -57,13 +60,12 @@ function page(worksData: WorksByProjectTypeDto[] | null, isLoading: boolean, err
                                 key={`${worksClassModel.hash}-${workModel.id}-${index}`}
                             >
                                 <div className="work-authors-titles">
-                                    <p>{workModel.authors}</p>
-                                    <p>{workModel.theme}</p>
+                                    <p>{workModel.authors} {workModel.theme}</p>
                                 </div>
                                 <p className="work-published">{workModel.published}</p>
                             </div>
                         ))}
-                    </div>
+                    </section>
                 ))}
             </div>
         </main>
