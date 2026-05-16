@@ -1100,15 +1100,15 @@ export function Navbar() {
                                         }}
                                         type="button"
                                     >
-                                        {title}
+                                        <span className="site-navigation-dropdown-link-label">{title}</span>
                                     </button>
                                 ) : (
                                     <NavLink
-                                        className={({isActive}) => `site-navigation-link site-navigation-dropdown-link${isActive ? " site-navigation-link-active" : ""}`}
+                                        className="site-navigation-link site-navigation-dropdown-link"
                                         key={`mobile-${path}`}
                                         to={path}
                                     >
-                                        {title}
+                                        <span className="site-navigation-dropdown-link-label">{title}</span>
                                     </NavLink>
                                 )
                             ))}
@@ -1134,7 +1134,7 @@ export function Navbar() {
                                             }}
                                             type="button"
                                         >
-                                            {category.label}
+                                            <span className="site-navigation-dropdown-link-label">{category.label}</span>
                                         </button>
                                     ))}
                                 </>
@@ -1162,7 +1162,7 @@ export function Navbar() {
                                             }}
                                             to={getPanelItemPath(item, mobilePanelKind)}
                                         >
-                                            {item.title}
+                                            <span className="site-navigation-dropdown-link-label">{item.title}</span>
                                         </NavLink>
                                     ))}
                                 </>

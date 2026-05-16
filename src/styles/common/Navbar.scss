@@ -1206,6 +1206,7 @@
     border-top: 1px solid rgba(0, 0, 0, 0.12);
     align-content: start;
     z-index: 3;
+    font-family: "Tilda Sans", sans-serif;
   }
 
   .site-header-main-menu-top-links {
@@ -1225,6 +1226,7 @@
     border-bottom: 1px solid rgba(0, 0, 0, 0.12);
     -webkit-overflow-scrolling: touch;
     scrollbar-width: none;
+    font-family: "Tilda Sans", sans-serif;
   }
 
   .site-header-main-menu-top-links::-webkit-scrollbar {
@@ -1242,6 +1244,7 @@
     line-height: 1.2;
     white-space: nowrap;
     text-align: left;
+    font-family: "Tilda Sans", sans-serif;
   }
 
   .site-navigation-dropdown-link:hover {
@@ -1249,14 +1252,41 @@
   }
 
   .site-header-main-menu-links {
+    --site-mobile-menu-row-height: 56px;
+    --site-mobile-menu-row-font-size: 14px;
+    --site-mobile-menu-row-font-weight: 500;
     min-height: 0;
     overflow-y: auto;
     padding-top: 10px;
   }
 
+  .site-header-main-menu .site-navigation-link-active::after {
+    display: none;
+  }
+
   .site-header-main-menu-links .site-navigation-dropdown-link {
-    justify-content: space-between;
+    justify-content: flex-start;
     align-items: center;
+    min-height: var(--site-mobile-menu-row-height);
+    height: var(--site-mobile-menu-row-height);
+    padding-top: 0;
+    padding-bottom: 0;
+    font-size: var(--site-mobile-menu-row-font-size);
+    font-weight: var(--site-mobile-menu-row-font-weight);
+    line-height: 1.25;
+    min-width: 0;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+
+  .site-header-main-menu-links .site-navigation-dropdown-link-label {
+    display: block;
+    min-width: 0;
+    max-width: 100%;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
   }
 
   .site-header-main-menu-links .site-navigation-dropdown-link::before {
@@ -1265,29 +1295,36 @@
 
   .site-header-main-menu-links .site-navigation-dropdown-link-has-children::after {
     content: "";
-    position: static;
+    position: absolute;
+    right: 0;
+    top: 50%;
     width: 18px;
     height: 18px;
-    margin-left: 16px;
     border: 0;
     background: none;
-    transform: rotate(-90deg);
+    transform: translateY(-50%) rotate(-90deg);
     flex: 0 0 auto;
     -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath fill='black' d='M8.00004 11C7.74004 11 7.49004 10.9 7.29004 10.71L3.79004 7.21005L5.20004 5.80005L7.99004 8.59005L10.78 5.80005L12.19 7.21005L8.69004 10.71C8.49004 10.91 8.24004 11 7.98004 11H8.00004Z'/%3E%3C/svg%3E") center / contain no-repeat;
     mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath fill='black' d='M8.00004 11C7.74004 11 7.49004 10.9 7.29004 10.71L3.79004 7.21005L5.20004 5.80005L7.99004 8.59005L10.78 5.80005L12.19 7.21005L8.69004 10.71C8.49004 10.91 8.24004 11 7.98004 11H8.00004Z'/%3E%3C/svg%3E") center / contain no-repeat;
     background-color: #6b7280;
   }
 
+  .site-header-main-menu-links .site-navigation-dropdown-link-has-children {
+    position: relative;
+    padding-right: 34px;
+  }
+
   .site-navigation-mobile-back {
-    min-height: 44px;
-    height: 44px;
+    min-height: var(--site-mobile-menu-row-height);
+    height: var(--site-mobile-menu-row-height);
     justify-content: flex-start !important;
     gap: 10px;
-    padding: 8px 0;
+    padding: 0;
     color: #1f2937;
-    font-weight: 600;
-    font-size: 16px;
-    line-height: 1.2;
+    font-weight: var(--site-mobile-menu-row-font-weight);
+    font-size: var(--site-mobile-menu-row-font-size);
+    line-height: 1.25;
+    font-family: "Tilda Sans", sans-serif;
   }
 
   .site-navigation-mobile-back-icon {
@@ -1314,14 +1351,17 @@
   }
 
   .site-navigation-mobile-group-title {
-    min-height: 40px;
+    min-height: var(--site-mobile-menu-row-height);
     display: flex;
     align-items: center;
     padding: 0;
-    color: #6b7280;
-    font-size: 14px;
-    letter-spacing: 0.02em;
-    text-transform: uppercase;
+    color: #1f2937;
+    font-size: var(--site-mobile-menu-row-font-size);
+    font-weight: var(--site-mobile-menu-row-font-weight);
+    line-height: 1.25;
+    letter-spacing: normal;
+    text-transform: none;
+    font-family: "Tilda Sans", sans-serif;
   }
 
   .site-header-main-menu-extra {
@@ -1352,6 +1392,7 @@
     border: 2px solid #1f2937;
     font-size: 16px;
     font-weight: 600;
+    font-family: "Tilda Sans", sans-serif;
   }
 
   .site-header-main-menu-actions .site-navigation-dropdown-link:first-child {
