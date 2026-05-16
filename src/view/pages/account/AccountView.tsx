@@ -11,6 +11,7 @@ import {
     getAccountProfile,
     getDonations,
     getFavorites,
+    registerAccount,
     updateAccountProfile
 } from "../../../api/accountApi";
 import type {
@@ -58,6 +59,7 @@ export function AccountView() {
     const [authPassword, setAuthPassword] = useState("");
     const [authRole, setAuthRole] = useState("USER");
     const [authError, setAuthError] = useState("");
+    const [isAuthSubmitting, setIsAuthSubmitting] = useState(false);
     const [profile, setProfile] = useState<AccountProfileResponse | null>(() => {
         const existingSession = readLocalAuthSession();
         return existingSession ? buildProfileFromSession(existingSession) : null;
@@ -164,63 +166,88 @@ export function AccountView() {
         navigate(`/account?mode=${mode}`, {replace: true});
     };
 
-    const handleAuthSubmit = (event: FormEvent<HTMLFormElement>) => {
+    const handleAuthSubmit = async (event: FormEvent<HTMLFormElement>) => {
         event.preventDefault();
         setAuthError("");
+        setIsAuthSubmitting(true);
 
         const normalizedName = authName.trim();
         const normalizedEmail = authEmail.trim();
 
         if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)) {
             setAuthError("Введите корректный email.");
+            setIsAuthSubmitting(false);
             return;
         }
 
         if (authPassword.trim().length < 8) {
             setAuthError("Пароль должен содержать минимум 8 символов.");
+            setIsAuthSubmitting(false);
             return;
         }
 
-        let session: LocalAuthSession;
+        try {
+            let session: LocalAuthSession;
 
-        if (authMode === "login") {
-            const foundUser = findLocalAuthUserByCredentials(normalizedEmail, authPassword);
-            if (!foundUser) {
-                setAuthError("Неверный логин или пароль. Для демо используйте developer@dev.com / developer.");
-                return;
+            if (authMode === "login") {
+                const foundUser = findLocalAuthUserByCredentials(normalizedEmail, authPassword);
+                if (!foundUser) {
+                    setAuthError("Неверный логин или пароль. Для демо используйте developer@dev.com / developer.");
+                    return;
+                }
+
+                session = createLocalAuthSession(foundUser.name, foundUser.email, "login", foundUser.roles);
+            } else {
+                if (normalizedName.length < 2) {
+                    setAuthError("Введите имя не короче 2 символов.");
+                    return;
+                }
+
+                try {
+                    const registeredProfile = await registerAccount({
+                        name: normalizedName,
+                        email: normalizedEmail,
+                        password: authPassword
+                    });
+
+                    session = {
+                        subject: registeredProfile.subject,
+                        name: registeredProfile.name,
+                        email: registeredProfile.email,
+                        roles: registeredProfile.roles,
+                        createdAt: new Date().toISOString()
+                    };
+                } catch (registrationError) {
+                    if (!isLocalRoleDebugVisible) {
+                        setAuthError(registrationError instanceof Error ? registrationError.message : "Не удалось создать аккаунт в Keycloak.");
+                        return;
+                    }
+
+                    registerLocalAuthUser(
+                        normalizedName,
+                        normalizedEmail,
+                        authPassword,
+                        isLocalRoleDebugVisible ? [authRole] : ["USER"]
+                    );
+
+                    session = createLocalAuthSession(
+                        normalizedName,
+                        normalizedEmail,
+                        "register",
+                        isLocalRoleDebugVisible ? [authRole] : ["USER"]
+                    );
+                }
             }
 
-            session = createLocalAuthSession(foundUser.name, foundUser.email, "login", foundUser.roles);
-        } else {
-            if (normalizedName.length < 2) {
-                setAuthError("Введите имя не короче 2 символов.");
-                return;
-            }
-
-            try {
-                registerLocalAuthUser(
-                    normalizedName,
-                    normalizedEmail,
-                    authPassword,
-                    isLocalRoleDebugVisible ? [authRole] : ["USER"]
-                );
-            } catch (registrationError) {
-                setAuthError(registrationError instanceof Error ? registrationError.message : "Не удалось создать аккаунт.");
-                return;
-            }
-
-            session = createLocalAuthSession(
-                normalizedName,
-                normalizedEmail,
-                "register",
-                isLocalRoleDebugVisible ? [authRole] : ["USER"]
-            );
+            saveLocalAuthSession(session);
+            setProfile(buildProfileFromSession(session));
+            setAuthPassword("");
+            navigate("/account", {replace: true});
+        } catch (authSubmitError) {
+            setAuthError(authSubmitError instanceof Error ? authSubmitError.message : "Не удалось выполнить вход.");
+        } finally {
+            setIsAuthSubmitting(false);
         }
-
-        saveLocalAuthSession(session);
-        setProfile(buildProfileFromSession(session));
-        setAuthPassword("");
-        navigate("/account", {replace: true});
     };
 
     const openDeleteAccountModal = () => {
@@ -440,8 +467,10 @@ export function AccountView() {
 
                             {authError.length > 0 && <p className="account-auth-error">{authError}</p>}
 
-                            <button className="account-auth-submit" type="submit">
-                                {authMode === "register" ? "Создать аккаунт" : "Войти"}
+                            <button className="account-auth-submit" disabled={isAuthSubmitting} type="submit">
+                                {isAuthSubmitting
+                                    ? "Пожалуйста, подождите..."
+                                    : authMode === "register" ? "Создать аккаунт" : "Войти"}
                             </button>
                         </form>
 
