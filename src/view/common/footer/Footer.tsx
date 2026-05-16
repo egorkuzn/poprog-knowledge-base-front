@@ -42,21 +42,37 @@ export function Footer() {
     };
 
     const openAccount = () => navigate("/account");
+    const scrollTopOnNavigate = () => {
+        window.scrollTo({
+            top: 0,
+            left: 0,
+            behavior: "auto"
+        });
+    };
 
-    const handleHashLinkClick = (to: string) => (event: ReactMouseEvent<HTMLAnchorElement>) => {
-        const hashIndex = to.indexOf("#");
-        if (hashIndex < 0) {
+    const handleFooterRouteClick = (targetPath: string) => (event: ReactMouseEvent<HTMLAnchorElement>) => {
+        scrollTopOnNavigate();
+        if (location.pathname === targetPath) {
+            event.preventDefault();
+        }
+    };
+
+    const handleFooterHashRouteClick = (targetPath: string, targetHash: string) => (event: ReactMouseEvent<HTMLAnchorElement>) => {
+        if (location.pathname !== targetPath) {
             return;
         }
 
-        const targetPath = to.slice(0, hashIndex) || location.pathname;
-        const targetId = to.slice(hashIndex + 1);
-        if (targetPath !== location.pathname || targetId.length === 0) {
-            return;
-        }
+        scrollTopOnNavigate();
 
         event.preventDefault();
-        const targetElement = document.getElementById(targetId);
+
+        const decodedCurrentHash = decodeURIComponent(location.hash.replace(/^#/, ""));
+        if (decodedCurrentHash !== targetHash) {
+            navigate({pathname: targetPath, hash: `#${encodeURIComponent(targetHash)}`});
+            return;
+        }
+
+        const targetElement = document.getElementById(targetHash);
         if (!targetElement) {
             return;
         }
@@ -65,6 +81,16 @@ export function Footer() {
             behavior: "smooth",
             block: "start"
         });
+    };
+
+    const handleFooterSimpleLinkClick = (targetPath: string) => (event: ReactMouseEvent<HTMLAnchorElement>) => {
+        scrollTopOnNavigate();
+
+        if (location.pathname !== targetPath) {
+            return;
+        }
+
+        event.preventDefault();
     };
 
     return (
@@ -79,9 +105,27 @@ export function Footer() {
             </div>
 
             <div className="site-footer-grid">
-                <FooterColumn pathname="/projects" title="Проекты" values={new ProjectsFooterRow().data}/>
-                <FooterColumn pathname="/works" title="Дипломные работы и диссертации" values={footerWorks}/>
-                <FooterColumn pathname="/publications" title="Публикации" values={footerPublications}/>
+                <FooterColumn
+                    onRouteClick={handleFooterRouteClick}
+                    onRouteHashClick={handleFooterHashRouteClick}
+                    pathname="/projects"
+                    title="Проекты"
+                    values={new ProjectsFooterRow().data}
+                />
+                <FooterColumn
+                    onRouteClick={handleFooterRouteClick}
+                    onRouteHashClick={handleFooterHashRouteClick}
+                    pathname="/works"
+                    title="Дипломные работы и диссертации"
+                    values={footerWorks}
+                />
+                <FooterColumn
+                    onRouteClick={handleFooterRouteClick}
+                    onRouteHashClick={handleFooterHashRouteClick}
+                    pathname="/publications"
+                    title="Публикации"
+                    values={footerPublications}
+                />
 
                 <div className="site-footer-meta" id="contacts">
                     <p>Почта: poprog.industrial@gmail.com</p>
@@ -90,25 +134,25 @@ export function Footer() {
                         <a href="https://reddit.com/r/poprog/" onClick={handleExternalLinkClick("https://reddit.com/r/poprog/")} rel="noopener noreferrer" target="_blank">Реддит</a>
                         <a href="https://github.com/egorkuzn/poprog-knowledge-base-front" onClick={handleExternalLinkClick("https://github.com/egorkuzn/poprog-knowledge-base-front")} rel="noopener noreferrer" target="_blank">Гитхаб</a>
                     </div>
-                    <Link onClick={handleHashLinkClick("/home#about")} to="/home#about">О нас</Link>
-                    <Link to="/donate">Помочь проекту</Link>
-                    <Link to="/news">Новости</Link>
-                    <Link to="/support">Поддержка</Link>
-                    <Link to="/contact">Свяжитесь с нами</Link>
+                    <Link onClick={handleFooterSimpleLinkClick("/home")} to="/home">О нас</Link>
+                    <Link onClick={handleFooterSimpleLinkClick("/donate")} to="/donate">Помочь проекту</Link>
+                    <Link onClick={handleFooterSimpleLinkClick("/news")} to="/news">Новости</Link>
+                    <Link onClick={handleFooterSimpleLinkClick("/support")} to="/support">Поддержка</Link>
+                    <Link onClick={handleFooterSimpleLinkClick("/contact")} to="/contact">Свяжитесь с нами</Link>
                     <p>© poprog 2026</p>
                 </div>
             </div>
 
             <div className="site-footer-bottom">
-                <Link className="site-footer-to-top" onClick={handleHashLinkClick("/home#top")} to="/home#top">
+                <Link className="site-footer-to-top" onClick={handleFooterSimpleLinkClick("/home")} to="/home">
                     <span>В начало</span>
                     <img alt="" aria-hidden="true" src={arrowTopIcon}/>
                 </Link>
 
                 <div className="site-footer-legal">
-                    <Link to="/privacy">Конфиденциальность</Link>
-                    <Link to="/terms">Условия пользования сайтом</Link>
-                    <Link to="/cookies">Параметры файлов cookie</Link>
+                    <Link onClick={handleFooterSimpleLinkClick("/privacy")} to="/privacy">Конфиденциальность</Link>
+                    <Link onClick={handleFooterSimpleLinkClick("/terms")} to="/terms">Условия пользования сайтом</Link>
+                    <Link onClick={handleFooterSimpleLinkClick("/cookies")} to="/cookies">Параметры файлов cookie</Link>
                 </div>
             </div>
         </footer>
@@ -119,22 +163,34 @@ interface FooterColumnProps {
     pathname: string
     title: string
     values: FooterRawDataElement[]
+    onRouteClick: (targetPath: string) => (event: ReactMouseEvent<HTMLAnchorElement>) => void
+    onRouteHashClick: (targetPath: string, targetHash: string) => (event: ReactMouseEvent<HTMLAnchorElement>) => void
 }
 
 function FooterColumn(props: FooterColumnProps) {
     return (
         <div className="site-footer-column">
-            <h4>{props.title}</h4>
+            <h4>
+                <Link onClick={props.onRouteClick(props.pathname)} to={props.pathname}>{props.title}</Link>
+            </h4>
             <div className="site-footer-links">
                 {props.values.map((item) => (
                     props.pathname === "/projects"
                         ? (
-                            <Link key={`${props.pathname}-${item.hash}`} to={`${props.pathname}/${item.hash}`}>
+                            <Link
+                                key={`${props.pathname}-${item.hash}`}
+                                onClick={props.onRouteClick(`${props.pathname}/${item.hash}`)}
+                                to={`${props.pathname}/${item.hash}`}
+                            >
                                 {item.title}
                             </Link>
                         )
                         : (
-                            <Link key={`${props.pathname}-${item.hash}`} to={{pathname: props.pathname, hash: item.hash}}>
+                            <Link
+                                key={`${props.pathname}-${item.hash}`}
+                                onClick={props.onRouteHashClick(props.pathname, item.hash)}
+                                to={{pathname: props.pathname, hash: `#${encodeURIComponent(item.hash)}`}}
+                            >
                                 {item.title}
                             </Link>
                         )

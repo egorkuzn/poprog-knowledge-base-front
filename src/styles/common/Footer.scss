@@ -65,6 +65,11 @@
   font-size: 1.15rem;
 }
 
+.site-footer-column h4 a {
+  color: inherit;
+  text-decoration: none;
+}
+
 .site-footer-links {
   display: grid;
   gap: 8px;
