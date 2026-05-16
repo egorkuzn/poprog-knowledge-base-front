@@ -43,7 +43,7 @@ jobs:
         env:
           VITE_API_BASE_URL: /portal-api
           VITE_DEBUG_HEADERS_ENABLED: "false"
-          VITE_RIDE_CONSOLE_URL: /admin/master/console/
+          VITE_RIDE_CONSOLE_URL: https://ride.poprog.com/
           VITE_RIDE_SIGNUP_URL: /account
 
   docker-deploy:
@@ -73,7 +73,7 @@ jobs:
           build-args: |
             VITE_API_BASE_URL=/portal-api
             VITE_DEBUG_HEADERS_ENABLED=false
-            VITE_RIDE_CONSOLE_URL=/admin/master/console/
+            VITE_RIDE_CONSOLE_URL=https://ride.poprog.com/
             VITE_RIDE_SIGNUP_URL=/account
 
       - name: Prepare SSH
