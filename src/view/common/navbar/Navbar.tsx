@@ -739,11 +739,14 @@ export function Navbar() {
     const mobilePanelCategory = mobilePanelCategories[mobileProjectsCategoryIndex] ?? mobilePanelCategories[0];
     const mobileProjectsItems = mobilePanelItemsByCategory[mobilePanelCategory.key] ?? [];
     const projectsPanelItems = getPanelItemsByCategory(panelItemsByCategory, activePanelCategory.key, panelFallbackKey);
+    const fixedProjectsBottomRowItems = activePanelKind === "projects"
+        ? getPanelItemsByCategory(panelItemsByCategory, "languages", panelFallbackKey)
+        : projectsPanelItems;
     const featureProjectItem = projectsPanelItems[0];
     const plainProjectItemOne = projectsPanelItems[1];
     const plainProjectItemTwo = projectsPanelItems[2];
-    const newsProjectItem = projectsPanelItems[3];
-    const successProjectItem = projectsPanelItems[4];
+    const newsProjectItem = fixedProjectsBottomRowItems[3];
+    const successProjectItem = fixedProjectsBottomRowItems[4];
     const isProjectsRouteActive = location.pathname.startsWith("/projects");
     const isDiscoverRouteActive = location.pathname.startsWith("/docs");
 
