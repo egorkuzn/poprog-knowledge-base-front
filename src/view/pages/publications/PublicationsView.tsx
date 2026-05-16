@@ -15,6 +15,7 @@ export function PublicationsView() {
     const loadPublications = useCallback(() => getGroupedPublications(), []);
     const {data, error, isLoading} = useRemoteData(loadPublications);
     const [doiChoice, setDoiChoice] = useState<null | {pdfUrl: string, doiUrl: string}>(null);
+    const [toastMessage, setToastMessage] = useState<string | null>(null);
 
     const handlePublicationLinkClick = (publication: PublicationModel) => (event: ReactMouseEvent<HTMLAnchorElement>) => {
         const normalized = resolvePublicationLink(publication.link);
@@ -61,7 +62,42 @@ export function PublicationsView() {
         return () => window.clearTimeout(timeoutId);
     }, [searchParams, isLoading, error, data]);
 
-    return BodyView(page(data, isLoading, error, handlePublicationLinkClick, doiChoice, setDoiChoice));
+    const copyPublicationGost = useCallback(async (publication: PublicationModel) => {
+        const gostText = formatPublicationGost(publication);
+        try {
+            if (navigator.clipboard?.writeText) {
+                await navigator.clipboard.writeText(gostText);
+            } else {
+                const textarea = document.createElement("textarea");
+                textarea.value = gostText;
+                textarea.setAttribute("readonly", "true");
+                textarea.style.position = "absolute";
+                textarea.style.left = "-9999px";
+                document.body.appendChild(textarea);
+                textarea.select();
+                const copied = document.execCommand("copy");
+                document.body.removeChild(textarea);
+                if (!copied) {
+                    throw new Error("copy-failed");
+                }
+            }
+            setToastMessage("Скопировано!");
+            window.setTimeout(() => setToastMessage(null), 1800);
+        } catch {
+            window.alert("Не удалось скопировать автоматически. Разрешите доступ к буферу обмена в браузере.");
+        }
+    }, []);
+
+    return BodyView(page(
+        data,
+        isLoading,
+        error,
+        handlePublicationLinkClick,
+        doiChoice,
+        setDoiChoice,
+        copyPublicationGost,
+        toastMessage
+    ));
 }
 
 type PublicationLinkClickHandler = (publication: PublicationModel) => (event: ReactMouseEvent<HTMLAnchorElement>) => void;
@@ -93,20 +129,25 @@ function page(
     error: string | null,
     onPublicationLinkClick: PublicationLinkClickHandler,
     doiChoice: null | {pdfUrl: string, doiUrl: string},
-    setDoiChoice: (value: null | {pdfUrl: string, doiUrl: string}) => void
+    setDoiChoice: (value: null | {pdfUrl: string, doiUrl: string}) => void,
+    onCopyPublicationGost: (publication: PublicationModel) => void,
+    toastMessage: string | null
 ) {
     return (
         <main>
             <Breadcrumbs items={[{label: "Главная", to: "/home"}, {label: "Публикации"}]}/>
             <div className="publications-page">
-                <h1>Публикации</h1>
+                <section className="publications-hero">
+                    <h1>Публикации</h1>
+                    <p>Научные статьи и материалы по процесс-ориентированному программированию для обучения и исследований.</p>
+                </section>
                 {isLoading && <p className="remote-data-state">Загрузка публикаций...</p>}
                 {error && <p className="remote-data-state remote-data-state-error">Не удалось загрузить публикации: {error}</p>}
                 {!isLoading && !error && publications?.length === 0 && (
                     <p className="remote-data-state">Публикации пока не найдены.</p>
                 )}
                 {publications?.map((publicationsByDate) => (
-                    <div className="section-spacer" id={publicationsByDate.date} key={publicationsByDate.date}>
+                    <section className="publications-year-block section-spacer" id={publicationsByDate.date} key={publicationsByDate.date}>
                         <h2>{publicationsByDate.date}</h2>
                         {publicationsByDate.publications.map((publication, index) => (
                             <div
@@ -114,9 +155,25 @@ function page(
                                 id={`publication-${publication.id}`}
                                 key={`${publicationsByDate.date}-${publication.id}-${index}`}
                             >
-                                <div className="publication-authors-titles">
-                                    {renderPublicationLink(publication, <p>{publication.authors}</p>, onPublicationLinkClick)}
-                                    {renderPublicationLink(publication, <p>{publication.theme}</p>, onPublicationLinkClick)}
+                                <div className="publication-primary-row">
+                                    <div className="publication-authors-titles">
+                                        {renderPublicationLink(
+                                            publication,
+                                            <p>
+                                                {publication.authors} {publication.theme}
+                                            </p>,
+                                            onPublicationLinkClick
+                                        )}
+                                    </div>
+                                    <button
+                                        aria-label="Скопировать ссылку в формате ГОСТ"
+                                        className="publication-copy-button"
+                                        onClick={() => onCopyPublicationGost(publication)}
+                                        title="Скопировать ссылку в формате ГОСТ"
+                                        type="button"
+                                    >
+                                        ⧉
+                                    </button>
                                 </div>
                                 {renderPublicationLink(
                                     publication,
@@ -125,9 +182,14 @@ function page(
                                 )}
                             </div>
                         ))}
-                    </div>
+                    </section>
                 ))}
             </div>
+            {toastMessage && (
+                <div aria-live="polite" className="publication-toast" role="status">
+                    {toastMessage}
+                </div>
+            )}
 
             {doiChoice && (
                 <>
@@ -170,6 +232,26 @@ function page(
             )}
         </main>
     );
+}
+
+function formatPublicationGost(publication: PublicationModel): string {
+    const authors = publication.authors.trim();
+    const title = publication.theme.trim();
+    const output = publication.published.trim();
+    const rawLink = publication.link.trim();
+    const resolvedLink = rawLink !== "" ? resolvePublicationLink(rawLink) : extractDoiUrl(output);
+
+    if (resolvedLink) {
+        return `${authors} ${title} // ${output} [Электронный ресурс]. URL: ${resolvedLink} (дата обращения: ${formatAccessDate(new Date())}).`;
+    }
+    return `${authors} ${title} // ${output}.`;
+}
+
+function formatAccessDate(value: Date): string {
+    const day = `${value.getDate()}`.padStart(2, "0");
+    const month = `${value.getMonth() + 1}`.padStart(2, "0");
+    const year = value.getFullYear();
+    return `${day}.${month}.${year}`;
 }
 
 function extractDoiUrl(text: string): string | null {
