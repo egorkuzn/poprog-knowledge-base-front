@@ -1,7 +1,7 @@
 import React from "react";
 import {} from "./index.css";
 import ReactDOM from "react-dom/client";
-import { RouterProvider } from "react-router-dom";
+import { Navigate, RouterProvider, useLocation } from "react-router-dom";
 import {WorksView} from "./view/pages/works/WorksView";
 import {VideoView} from "./view/pages/video/VideoView";
 import {PublicationsView} from "./view/pages/publications/PublicationsView";
@@ -24,7 +24,18 @@ import { createBrowserRouter} from "react-router-dom";
 
 const routerBasename = import.meta.env.BASE_URL === "/" ? undefined : import.meta.env.BASE_URL.replace(/\/$/, "");
 
+function PortalStrippedRoute() {
+    const location = useLocation();
+    const cleanPath = location.pathname.replace(/^\/portal(?=\/|$)/, "");
+    const target = cleanPath === "" ? "/" : cleanPath;
+    return <Navigate to={`${target}${location.search}${location.hash}`} replace />;
+}
+
 const router = createBrowserRouter([
+    {
+        path: "/portal/*",
+        element: <PortalStrippedRoute/>
+    },
     {
         path: "/",
         element: <Home/>
