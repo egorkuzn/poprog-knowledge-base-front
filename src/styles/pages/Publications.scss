@@ -4,8 +4,9 @@
   padding-right: 2em;
 }
 
-.publications-page h1, h2{
-  color: black;
+.publications-page h1,
+.publications-page h2 {
+  color: inherit;
 }
 
 .publications-page a {
@@ -26,13 +27,17 @@
 
 .publication-authors-titles {
   display: flex;
-  width: fit-content;
-  column-gap: 0.25em;
+  flex-direction: column;
+  row-gap: 0.15em;
+  width: 100%;
 }
 
 .publication-published {
   font-weight: lighter;
-  margin-top: 0;
+  margin-top: 0.35em;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  line-height: 1.35;
 }
 
 .remote-data-state {

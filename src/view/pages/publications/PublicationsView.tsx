@@ -8,18 +8,25 @@ import {getGroupedPublications} from "../../../api/knowledgeBaseApi";
 import type {PublicationModel, PublicationsByDateDto} from "../../../api/types";
 import {useRemoteData} from "../../../hooks/useRemoteData";
 import {isExternalResourceUrl, requestExternalNavigation} from "../../../utils/externalNavigation";
+import {apiBaseUrl} from "../../../api/config";
 
 export function PublicationsView() {
     const [searchParams] = useSearchParams();
     const loadPublications = useCallback(() => getGroupedPublications(), []);
     const {data, error, isLoading} = useRemoteData(loadPublications);
     const handlePublicationLinkClick = (publicationLink: string) => (event: ReactMouseEvent<HTMLAnchorElement>) => {
-        if (!isExternalResourceUrl(publicationLink)) {
+        const normalized = resolvePublicationLink(publicationLink);
+        // PDF files served by our backend should open directly without external-navigation flow.
+        if (normalized.startsWith(`${apiBaseUrl}/api/files/`)) {
+            return;
+        }
+
+        if (!isExternalResourceUrl(normalized)) {
             return;
         }
 
         event.preventDefault();
-        void requestExternalNavigation(publicationLink);
+        void requestExternalNavigation(normalized);
     };
 
     useEffect(() => {
@@ -50,10 +57,23 @@ type PublicationLinkClickHandler = (publicationLink: string) => (event: ReactMou
 
 function renderPublicationLink(publication: PublicationModel, element: JSX.Element, onPublicationLinkClick: PublicationLinkClickHandler) {
     return publication.link === "" ? element : (
-        <a href={publication.link} onClick={onPublicationLinkClick(publication.link)} rel="noopener noreferrer" target="_blank">
+        <a
+            href={resolvePublicationLink(publication.link)}
+            onClick={onPublicationLinkClick(publication.link)}
+            rel="noopener noreferrer"
+            target="_blank"
+        >
             {element}
         </a>
     );
+}
+
+function resolvePublicationLink(link: string): string {
+    const trimmed = link.trim();
+    if (trimmed.startsWith("/api/")) {
+        return `${apiBaseUrl}${trimmed}`;
+    }
+    return trimmed;
 }
 
 function page(
