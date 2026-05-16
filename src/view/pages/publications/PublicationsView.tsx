@@ -1,4 +1,4 @@
-import {useCallback, useEffect} from "react";
+import {useCallback, useEffect, useState} from "react";
 import type {JSX, MouseEvent as ReactMouseEvent} from "react";
 import {useSearchParams} from "react-router-dom";
 import BodyView from "../BodyView";
@@ -14,8 +14,19 @@ export function PublicationsView() {
     const [searchParams] = useSearchParams();
     const loadPublications = useCallback(() => getGroupedPublications(), []);
     const {data, error, isLoading} = useRemoteData(loadPublications);
-    const handlePublicationLinkClick = (publicationLink: string) => (event: ReactMouseEvent<HTMLAnchorElement>) => {
-        const normalized = resolvePublicationLink(publicationLink);
+    const [doiChoice, setDoiChoice] = useState<null | {pdfUrl: string, doiUrl: string}>(null);
+
+    const handlePublicationLinkClick = (publication: PublicationModel) => (event: ReactMouseEvent<HTMLAnchorElement>) => {
+        const normalized = resolvePublicationLink(publication.link);
+
+        const doiUrl = extractDoiUrl(publication.published);
+        // If we have BOTH an internal PDF and a DOI, show a chooser instead of opening directly.
+        if (doiUrl && normalized.startsWith(`${apiBaseUrl}/api/files/`)) {
+            event.preventDefault();
+            setDoiChoice({pdfUrl: normalized, doiUrl});
+            return;
+        }
+
         // PDF files served by our backend should open directly without external-navigation flow.
         if (normalized.startsWith(`${apiBaseUrl}/api/files/`)) {
             return;
@@ -50,16 +61,16 @@ export function PublicationsView() {
         return () => window.clearTimeout(timeoutId);
     }, [searchParams, isLoading, error, data]);
 
-    return BodyView(page(data, isLoading, error, handlePublicationLinkClick));
+    return BodyView(page(data, isLoading, error, handlePublicationLinkClick, doiChoice, setDoiChoice));
 }
 
-type PublicationLinkClickHandler = (publicationLink: string) => (event: ReactMouseEvent<HTMLAnchorElement>) => void;
+type PublicationLinkClickHandler = (publication: PublicationModel) => (event: ReactMouseEvent<HTMLAnchorElement>) => void;
 
 function renderPublicationLink(publication: PublicationModel, element: JSX.Element, onPublicationLinkClick: PublicationLinkClickHandler) {
     return publication.link === "" ? element : (
         <a
             href={resolvePublicationLink(publication.link)}
-            onClick={onPublicationLinkClick(publication.link)}
+            onClick={onPublicationLinkClick(publication)}
             rel="noopener noreferrer"
             target="_blank"
         >
@@ -80,7 +91,9 @@ function page(
     publications: PublicationsByDateDto[] | null,
     isLoading: boolean,
     error: string | null,
-    onPublicationLinkClick: PublicationLinkClickHandler
+    onPublicationLinkClick: PublicationLinkClickHandler,
+    doiChoice: null | {pdfUrl: string, doiUrl: string},
+    setDoiChoice: (value: null | {pdfUrl: string, doiUrl: string}) => void
 ) {
     return (
         <main>
@@ -115,6 +128,55 @@ function page(
                     </div>
                 ))}
             </div>
+
+            {doiChoice && (
+                <>
+                    <button
+                        aria-label="Закрыть выбор источника"
+                        className="site-external-resource-backdrop"
+                        onClick={() => setDoiChoice(null)}
+                        type="button"
+                    />
+                    <div aria-label="Выбор источника публикации" className="site-external-resource-modal" role="dialog">
+                        <h3>Открыть публикацию</h3>
+                        <p>Выберите источник:</p>
+                        <div className="site-external-resource-actions">
+                            <button
+                                className="site-external-resource-cancel"
+                                onClick={() => {
+                                    const url = doiChoice.pdfUrl;
+                                    setDoiChoice(null);
+                                    window.open(url, "_blank");
+                                }}
+                                type="button"
+                            >
+                                Открыть PDF
+                            </button>
+                            <button
+                                className="site-external-resource-confirm"
+                                onClick={() => {
+                                    const url = doiChoice.doiUrl;
+                                    setDoiChoice(null);
+                                    void requestExternalNavigation(url);
+                                }}
+                                type="button"
+                            >
+                                Открыть по DOI
+                            </button>
+                        </div>
+                        <p className="site-external-resource-url">{doiChoice.doiUrl}</p>
+                    </div>
+                </>
+            )}
         </main>
     );
+}
+
+function extractDoiUrl(text: string): string | null {
+    const s = (text ?? "").trim();
+    const doiOrg = s.match(/doi\.org\/(10\.\d{4,9}\/[^\s)\]}>\"']+)/i);
+    if (doiOrg?.[1]) return `https://doi.org/${doiOrg[1].replace(/[.,;:]+$/, "")}`;
+    const doi = s.match(/\b10\.\d{4,9}\/[^\s)\]}>\"']+/);
+    if (doi?.[0]) return `https://doi.org/${doi[0].replace(/[.,;:]+$/, "")}`;
+    return null;
 }
