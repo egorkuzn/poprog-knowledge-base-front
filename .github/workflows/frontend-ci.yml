@@ -107,6 +107,7 @@ jobs:
           EOF2
           printf '%s' "$GHCR_TOKEN" | docker login ghcr.io -u "$GHCR_USER" --password-stdin >/dev/null
           docker compose pull portal-frontend
+          docker rm -f poprog-portal-frontend >/dev/null 2>&1 || true
           docker compose up -d portal-frontend
           docker logout ghcr.io >/dev/null
           REMOTE
