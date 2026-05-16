@@ -715,7 +715,7 @@ export function Navbar() {
         setIsMenuOpen(false);
         setIsProjectsPanelOpen(false);
         setIsSearchOpen(false);
-        window.open(rideConsoleUrl, "_blank", "noopener,noreferrer");
+        window.location.assign(rideConsoleUrl);
     };
 
     const handleAuthAction = () => {
