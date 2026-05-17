@@ -21,22 +21,17 @@ import type {
     AccountProfileResponse
 } from "../../../api/types";
 import {
-    createLocalAuthSession,
-    deleteLocalAuthCurrentAccount,
-    findLocalAuthUserByCredentials,
+    clearLocalAuthSession,
     loginKeycloakAccount,
     localAuthChangedEventName,
     readLocalAuthSession,
-    registerLocalAuthUser,
     saveLocalAuthSession,
-    updateLocalAuthSessionProfile,
     type AuthMode,
     type LocalAuthSession
 } from "../../../utils/localAuth";
 import "../../../styles/pages/Account.scss";
 
 const serviceRoles = new Set(["ADMIN", "MODERATOR", "SUPPORT", "DEVOPS", "PM", "EDITOR"]);
-const localRoleOptions = ["USER", "ADMIN", "SUPPORT", "PM", "DEVOPS"];
 
 function buildProfileFromSession(session: LocalAuthSession): AccountProfileResponse {
     return {
@@ -59,7 +54,6 @@ export function AccountView() {
     const [authName, setAuthName] = useState("");
     const [authEmail, setAuthEmail] = useState("");
     const [authPassword, setAuthPassword] = useState("");
-    const [authRole, setAuthRole] = useState("USER");
     const [authError, setAuthError] = useState("");
     const [isAuthSubmitting, setIsAuthSubmitting] = useState(false);
     const [profile, setProfile] = useState<AccountProfileResponse | null>(() => {
@@ -84,8 +78,6 @@ export function AccountView() {
     const hasServiceRole = (profile?.roles ?? []).some((role) => serviceRoles.has(role.toUpperCase()));
     const hasAdminRole = (profile?.roles ?? []).some((role) => role.toUpperCase() === "ADMIN");
     const profileSubject = profile?.subject ?? "";
-    const isLocalRoleDebugVisible = typeof window !== "undefined"
-        && ["localhost", "127.0.0.1"].includes(window.location.hostname);
 
     useEffect(() => {
         setAuthMode(getAuthModeFromSearch(location.search));
@@ -174,7 +166,7 @@ export function AccountView() {
     const authHint = useMemo(() => (
         authMode === "register"
             ? "Создайте аккаунт в интерфейсе Poprog, чтобы сохранять избранное и историю операций."
-            : "Войдите в аккаунт Poprog, чтобы открыть личный кабинет без внешнего редиректа. Демо: developer@dev.com / developer"
+            : "Войдите в аккаунт Poprog через Keycloak, чтобы открыть личный кабинет без внешнего редиректа."
     ), [authMode]);
 
     const switchAuthMode = (mode: AuthMode) => {
@@ -207,61 +199,19 @@ export function AccountView() {
             let session: LocalAuthSession;
 
             if (authMode === "login") {
-                try {
-                    session = await loginKeycloakAccount(normalizedEmail, authPassword);
-                } catch {
-                    const foundUser = findLocalAuthUserByCredentials(normalizedEmail, authPassword);
-                    if (!foundUser) {
-                        setAuthError("Неверный логин или пароль.");
-                        return;
-                    }
-
-                    session = createLocalAuthSession(foundUser.name, foundUser.email, "login", foundUser.roles);
-                }
+                session = await loginKeycloakAccount(normalizedEmail, authPassword);
             } else {
                 if (normalizedName.length < 2) {
                     setAuthError("Введите имя не короче 2 символов.");
                     return;
                 }
 
-                try {
-                    const registeredProfile = await registerAccount({
-                        name: normalizedName,
-                        email: normalizedEmail,
-                        password: authPassword
-                    });
-
-                    try {
-                        session = await loginKeycloakAccount(normalizedEmail, authPassword);
-                    } catch {
-                        session = {
-                            subject: registeredProfile.subject,
-                            name: registeredProfile.name,
-                            email: registeredProfile.email,
-                            roles: registeredProfile.roles,
-                            createdAt: new Date().toISOString()
-                        };
-                    }
-                } catch (registrationError) {
-                    if (!isLocalRoleDebugVisible) {
-                        setAuthError(registrationError instanceof Error ? registrationError.message : "Не удалось создать аккаунт в Keycloak.");
-                        return;
-                    }
-
-                    registerLocalAuthUser(
-                        normalizedName,
-                        normalizedEmail,
-                        authPassword,
-                        isLocalRoleDebugVisible ? [authRole] : ["USER"]
-                    );
-
-                    session = createLocalAuthSession(
-                        normalizedName,
-                        normalizedEmail,
-                        "register",
-                        isLocalRoleDebugVisible ? [authRole] : ["USER"]
-                    );
-                }
+                await registerAccount({
+                    name: normalizedName,
+                    email: normalizedEmail,
+                    password: authPassword
+                });
+                session = await loginKeycloakAccount(normalizedEmail, authPassword);
             }
 
             saveLocalAuthSession(session);
@@ -297,12 +247,7 @@ export function AccountView() {
         setDeleteAccountError("");
 
         try {
-            const isDeleted = deleteLocalAuthCurrentAccount();
-            if (!isDeleted) {
-                setDeleteAccountError("Не удалось удалить аккаунт. Попробуйте войти заново.");
-                return;
-            }
-
+            clearLocalAuthSession();
             setProfile(null);
             setChats([]);
             setFavorites([]);
@@ -345,14 +290,8 @@ export function AccountView() {
             });
             setProfile(updatedProfile);
             setIsProfileEditing(false);
-        } catch {
-            const localSession = updateLocalAuthSessionProfile(normalizedName, normalizedEmail);
-            if (localSession) {
-                setProfile(buildProfileFromSession(localSession));
-                setIsProfileEditing(false);
-            } else {
-                setProfileEditError("Не удалось сохранить профиль.");
-            }
+        } catch (saveError) {
+            setProfileEditError(saveError instanceof Error ? saveError.message : "Не удалось сохранить профиль.");
         } finally {
             setIsSavingProfile(false);
         }
@@ -479,17 +418,6 @@ export function AccountView() {
                                 />
                             </label>
 
-                            {isLocalRoleDebugVisible && (
-                                <label>
-                                    Служебная роль для локальной отладки
-                                    <select onChange={(event) => setAuthRole(event.target.value)} value={authRole}>
-                                        {localRoleOptions.map((role) => (
-                                            <option key={role} value={role}>{role}</option>
-                                        ))}
-                                    </select>
-                                </label>
-                            )}
-
                             {authError.length > 0 && <p className="account-auth-error">{authError}</p>}
 
                             <button className="account-auth-submit" disabled={isAuthSubmitting} type="submit">
@@ -500,8 +428,7 @@ export function AccountView() {
                         </form>
 
                         <p className="account-auth-note">
-                            Тестовый вход: <strong>developer@dev.com</strong> / <strong>developer</strong><br/>
-                            После входа вы сможете управлять историей донатов, сохранять избранные материалы и переходить в чаты.
+                            После входа через Keycloak вы сможете управлять историей донатов, сохранять избранные материалы и переходить в чаты.
                             <Link to="/donate"> Поддержать проект</Link>
                         </p>
                     </div>
@@ -526,7 +453,7 @@ export function AccountView() {
                                 )}
                                 {!hasAdminRole && (
                                     <button className="account-danger-action-button" onClick={openDeleteAccountModal} type="button">
-                                        Удалить аккаунт
+                                        Выйти
                                     </button>
                                 )}
                             </div>
@@ -675,8 +602,8 @@ export function AccountView() {
                                 onClick={(event) => event.stopPropagation()}
                                 role="dialog"
                             >
-                                <h3 id="account-delete-title">Удалить аккаунт?</h3>
-                                <p>Это действие необратимо: профиль и локальная сессия будут удалены.</p>
+                                <h3 id="account-delete-title">Выйти из аккаунта?</h3>
+                                <p>Текущая сессия будет завершена на этом устройстве. Учетная запись в Keycloak сохранится.</p>
                                 {deleteAccountError.length > 0 && <p className="account-auth-error">{deleteAccountError}</p>}
                                 <div className="account-modal-actions">
                                     <button className="account-modal-secondary-button" onClick={closeDeleteAccountModal} type="button">
@@ -688,7 +615,7 @@ export function AccountView() {
                                         onClick={handleDeleteAccount}
                                         type="button"
                                     >
-                                        {isDeletingAccount ? "Удаляем..." : "Удалить аккаунт"}
+                                        {isDeletingAccount ? "Выходим..." : "Выйти"}
                                     </button>
                                 </div>
                             </section>

@@ -13,44 +13,8 @@ function buildUrl(path: string): string {
     return `${apiBaseUrl}${path}`;
 }
 
-function getEnvDebugAuthHeaders(): Record<string, string> {
-    const enabled = import.meta.env.VITE_DEBUG_HEADERS_ENABLED === "true";
-    if (!enabled) {
-        return {};
-    }
-
-    const sub = import.meta.env.VITE_DEBUG_USER_SUB?.trim();
-    if (!sub) {
-        return {};
-    }
-
-    const headers: Record<string, string> = {
-        subject: sub
-    };
-
-    const email = import.meta.env.VITE_DEBUG_USER_EMAIL?.trim();
-    if (email) {
-        headers.email = email;
-    }
-
-    const name = import.meta.env.VITE_DEBUG_USER_NAME?.trim();
-    if (name) {
-        headers.name = name;
-    }
-
-    const roles = import.meta.env.VITE_DEBUG_USER_ROLES?.trim();
-    if (roles) {
-        headers.roles = roles;
-    }
-
-    return headers;
-}
-
 function getAuthHeaders(): Record<string, string> {
-    return {
-        ...getEnvDebugAuthHeaders(),
-        ...getLocalAuthHeaders()
-    };
+    return getLocalAuthHeaders();
 }
 
 function buildHeaders(headers?: HeadersInit): HeadersInit {

@@ -143,7 +143,7 @@ export function AdminDonationsView() {
             {profile && !hasAccess && (
                 <section className="account-card">
                     <h1>Админ-донаты</h1>
-                    <p>Эта страница доступна только для служебных ролей. Для локальной отладки войдите под ролью `ADMIN` или `SUPPORT`.</p>
+                    <p>Эта страница доступна только для служебных ролей. Выдайте пользователю роль `ADMIN` или `SUPPORT` в Keycloak.</p>
                     <Link className="account-inline-link" to="/account">Вернуться в личный кабинет</Link>
                 </section>
             )}
