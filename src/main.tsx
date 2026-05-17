@@ -10,6 +10,7 @@ import {Home} from "./view/pages/home/Home";
 import {ChatView} from "./view/pages/chat/ChatView";
 import {ProjectsView} from "./view/pages/projects/ProjectsView";
 import {ProjectItemView} from "./view/pages/projects/ProjectItemView";
+import {ProjectDocsView} from "./view/pages/projects/ProjectDocsView";
 import {MarketView} from "./view/pages/market/MarketView";
 import {AccountView} from "./view/pages/account/AccountView";
 import {AdminDonationsView} from "./view/pages/account/AdminDonationsView";
@@ -56,6 +57,10 @@ const router = createBrowserRouter([
     {
         path: "/projects",
         element: <ProjectsView/>
+    },
+    {
+        path: "/projects/:itemSlug/docs",
+        element: <ProjectDocsView/>
     },
     {
         path: "/projects/:itemSlug",
