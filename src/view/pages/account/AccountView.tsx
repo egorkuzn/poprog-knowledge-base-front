@@ -55,6 +55,34 @@ function isStrongRegistrationPassword(password: string): boolean {
         && /[^A-Za-z\d]/.test(password);
 }
 
+function getPasswordRuleState(password: string) {
+    return [
+        {label: "12 или больше символов", passed: password.length >= 12},
+        {label: "строчная буква", passed: /[a-z]/.test(password)},
+        {label: "заглавная буква", passed: /[A-Z]/.test(password)},
+        {label: "цифра", passed: /\d/.test(password)},
+        {label: "специальный символ, например ! или -", passed: /[^A-Za-z\d]/.test(password)}
+    ];
+}
+
+function getFriendlyAuthError(error: unknown, mode: AuthMode): string {
+    const message = error instanceof Error ? error.message : "";
+    const lowerMessage = message.toLowerCase();
+
+    if (mode === "register" && (lowerMessage.includes("400") || lowerMessage.includes("bad request") || lowerMessage.includes("password policy"))) {
+        return "Пароль не подходит под требования безопасности. Проверьте подсказку под полем пароля и попробуйте ещё раз.";
+    }
+
+    if (mode === "register" && lowerMessage.includes("409")) {
+        return "Аккаунт с таким email уже существует. Переключитесь на вкладку «Вход» и войдите с этим email.";
+    }
+
+    if (lowerMessage.includes("502") || lowerMessage.includes("bad gateway")) {
+        return "Сервис авторизации временно недоступен. Попробуйте ещё раз через минуту.";
+    }
+
+    return message || (mode === "register" ? "Не удалось создать аккаунт." : "Не удалось выполнить вход.");
+}
 export function AccountView() {
     const location = useLocation();
     const navigate = useNavigate();
@@ -86,6 +114,8 @@ export function AccountView() {
     const hasServiceRole = (profile?.roles ?? []).some((role) => serviceRoles.has(role.toUpperCase()));
     const hasAdminRole = (profile?.roles ?? []).some((role) => role.toUpperCase() === "ADMIN");
     const profileSubject = profile?.subject ?? "";
+    const passwordRules = useMemo(() => getPasswordRuleState(authPassword.trim()), [authPassword]);
+    const failedPasswordRules = passwordRules.filter((rule) => !rule.passed);
 
     useEffect(() => {
         setAuthMode(getAuthModeFromSearch(location.search));
@@ -215,7 +245,7 @@ export function AccountView() {
                 }
 
                 if (!isStrongRegistrationPassword(authPassword.trim())) {
-                    setAuthError("Пароль должен быть не короче 12 символов и содержать строчную букву, заглавную букву, цифру и специальный символ.");
+                    setAuthError(`Добавьте в пароль: ${failedPasswordRules.map((rule) => rule.label).join(", ")}.`);
                     return;
                 }
 
@@ -232,7 +262,7 @@ export function AccountView() {
             setAuthPassword("");
             navigate("/account", {replace: true});
         } catch (authSubmitError) {
-            setAuthError(authSubmitError instanceof Error ? authSubmitError.message : "Не удалось выполнить вход.");
+            setAuthError(getFriendlyAuthError(authSubmitError, authMode));
         } finally {
             setIsAuthSubmitting(false);
         }
@@ -425,11 +455,26 @@ export function AccountView() {
                                 <input
                                     autoComplete={authMode === "register" ? "new-password" : "current-password"}
                                     onChange={(event) => setAuthPassword(event.target.value)}
-                                    placeholder={authMode === "register" ? "Минимум 12 символов, A-z, цифра и спецсимвол" : "Пароль"}
+                                    placeholder={authMode === "register" ? "Например: StrongPass-123!" : "Пароль"}
                                     type="password"
                                     value={authPassword}
                                 />
                             </label>
+                            {authMode === "register" && (
+                                <div className="account-password-help" aria-live="polite">
+                                    <p>Пароль должен содержать:</p>
+                                    <ul>
+                                        {passwordRules.map((rule) => (
+                                            <li
+                                                className={rule.passed ? "account-password-rule-ok" : ""}
+                                                key={rule.label}
+                                            >
+                                                {rule.passed ? "Готово: " : "Нужно: "}{rule.label}
+                                            </li>
+                                        ))}
+                                    </ul>
+                                </div>
+                            )}
 
                             {authError.length > 0 && <p className="account-auth-error">{authError}</p>}
 

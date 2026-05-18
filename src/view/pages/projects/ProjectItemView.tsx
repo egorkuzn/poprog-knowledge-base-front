@@ -29,8 +29,8 @@ const projectContentMap: Record<string, ProjectContent> = {
             "Прозрачность архитектуры контроллерного ПО",
             "Быстрый онбординг новых инженеров"
         ],
-        cta: "Запросить демо-пакет Reflex",
-        ctaPath: "/contact"
+        cta: "Открыть документацию Reflex",
+        ctaPath: "/projects/reflex/docs"
     },
     post: {
         title: "poST",
@@ -46,8 +46,8 @@ const projectContentMap: Record<string, ProjectContent> = {
             "Сокращение аварий из-за гонок состояний",
             "Повторное использование типовых паттернов"
         ],
-        cta: "Получить гайд по poST",
-        ctaPath: "/docs"
+        cta: "Открыть документацию poST",
+        ctaPath: "/projects/post/docs"
     },
     "industrial-c": {
         title: "IndustrialC",
@@ -63,8 +63,8 @@ const projectContentMap: Record<string, ProjectContent> = {
             "Упрощение сопровождения legacy-частей",
             "Единый стиль кода для команд автоматизации"
         ],
-        cta: "Запустить пилот IndustrialC",
-        ctaPath: "/contact"
+        cta: "Открыть документацию IndustrialC",
+        ctaPath: "/projects/industrial-c/docs"
     },
     "languages-whats-new": {
         title: "Что нового в языках",
@@ -115,7 +115,7 @@ const projectContentMap: Record<string, ProjectContent> = {
             "Более предсказуемые релизы"
         ],
         cta: "Открыть раздел документации RIDE",
-        ctaPath: "/docs"
+        ctaPath: "/projects/ride-overview/docs"
     },
     "ride-cloud-launch": {
         title: "Запуск в облаке",
@@ -166,7 +166,7 @@ const projectContentMap: Record<string, ProjectContent> = {
             "Более короткий цикл обратной связи"
         ],
         cta: "Посмотреть релиз-ноты",
-        ctaPath: "/docs"
+        ctaPath: "/projects/ride-whats-new/docs"
     },
     requirements: {
         title: "Требования",
@@ -183,7 +183,7 @@ const projectContentMap: Record<string, ProjectContent> = {
             "Улучшение качества планирования релизов"
         ],
         cta: "Открыть материалы по требованиям",
-        ctaPath: "/docs"
+        ctaPath: "/projects/requirements/docs"
     },
     traceability: {
         title: "Трассировка",
@@ -217,7 +217,7 @@ const projectContentMap: Record<string, ProjectContent> = {
             "Повышение доверия к итоговым релизам"
         ],
         cta: "Изучить документацию EDTL",
-        ctaPath: "/docs"
+        ctaPath: "/projects/edtl-spec/docs"
     },
     "edtl-whats-new": {
         title: "Что нового в EDTL",
@@ -302,7 +302,7 @@ const projectContentMap: Record<string, ProjectContent> = {
             "Быстрее адаптация под новые требования"
         ],
         cta: "Изучить обновления",
-        ctaPath: "/docs"
+        ctaPath: "/projects/distributed-whats-new/docs"
     },
     "code-checks": {
         title: "Проверки кода",
@@ -319,7 +319,7 @@ const projectContentMap: Record<string, ProjectContent> = {
             "Более предсказуемый CI-процесс"
         ],
         cta: "Открыть документацию по проверкам",
-        ctaPath: "/docs"
+        ctaPath: "/projects/code-checks/docs"
     },
     "quality-metrics": {
         title: "Метрики качества",
@@ -370,7 +370,7 @@ const projectContentMap: Record<string, ProjectContent> = {
             "Прозрачность для всей команды доставки"
         ],
         cta: "Читать релиз-заметки",
-        ctaPath: "/docs"
+        ctaPath: "/projects/analysis-whats-new/docs"
     }
 };
 
