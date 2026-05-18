@@ -179,7 +179,11 @@ async function resolveKeycloakLoginError(response: Response): Promise<Error> {
     const description = details?.error_description?.toLowerCase() ?? "";
 
     if (description.includes("account is not fully set up") || description.includes("update_password")) {
-        return new Error("Пароль в Keycloak помечен как временный. Зайдите в Keycloak напрямую и завершите смену пароля либо в админке задайте пароль с Temporary = Off.");
+        return new Error(
+            import.meta.env.PROD
+                ? "Вход временно недоступен для этой учетной записи. Обратитесь в поддержку."
+                : "Пароль в Keycloak помечен как временный. Зайдите в Keycloak напрямую и завершите смену пароля либо в админке задайте пароль с Temporary = Off."
+        );
     }
 
     if (description.includes("invalid user credentials")) {
