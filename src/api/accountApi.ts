@@ -3,6 +3,7 @@ import type {
     AccountChatSummaryResponse,
     AccountDonationResponse,
     AccountFavoriteResponse,
+    AccountPasswordResetResponse,
     AccountProfileResponse,
     CreateDonationRequest,
     RegisterAccountRequest,
@@ -17,6 +18,10 @@ export function getAccountProfile(): Promise<AccountProfileResponse> {
 
 export function registerAccount(request: RegisterAccountRequest): Promise<AccountProfileResponse> {
     return postJson<AccountProfileResponse, RegisterAccountRequest>("/api/account/register", request);
+}
+
+export function requestPasswordReset(email: string): Promise<AccountPasswordResetResponse> {
+    return postJson<AccountPasswordResetResponse, { email: string }>("/api/account/password/reset", {email});
 }
 
 export function updateAccountProfile(request: UpdateAccountProfileRequest): Promise<AccountProfileResponse> {
