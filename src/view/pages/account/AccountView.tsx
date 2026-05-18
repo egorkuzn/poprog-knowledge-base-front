@@ -47,6 +47,14 @@ function getAuthModeFromSearch(search: string): AuthMode {
     return params.get("mode") === "register" ? "register" : "login";
 }
 
+function isStrongRegistrationPassword(password: string): boolean {
+    return password.length >= 12
+        && /[a-z]/.test(password)
+        && /[A-Z]/.test(password)
+        && /\d/.test(password)
+        && /[^A-Za-z\d]/.test(password);
+}
+
 export function AccountView() {
     const location = useLocation();
     const navigate = useNavigate();
@@ -189,8 +197,8 @@ export function AccountView() {
             return;
         }
 
-        if (authPassword.trim().length < 8) {
-            setAuthError("Пароль должен содержать минимум 8 символов.");
+        if (authPassword.trim().length === 0) {
+            setAuthError("Введите пароль.");
             setIsAuthSubmitting(false);
             return;
         }
@@ -203,6 +211,11 @@ export function AccountView() {
             } else {
                 if (normalizedName.length < 2) {
                     setAuthError("Введите имя не короче 2 символов.");
+                    return;
+                }
+
+                if (!isStrongRegistrationPassword(authPassword.trim())) {
+                    setAuthError("Пароль должен быть не короче 12 символов и содержать строчную букву, заглавную букву, цифру и специальный символ.");
                     return;
                 }
 
@@ -412,7 +425,7 @@ export function AccountView() {
                                 <input
                                     autoComplete={authMode === "register" ? "new-password" : "current-password"}
                                     onChange={(event) => setAuthPassword(event.target.value)}
-                                    placeholder="Минимум 8 символов"
+                                    placeholder={authMode === "register" ? "Минимум 12 символов, A-z, цифра и спецсимвол" : "Пароль"}
                                     type="password"
                                     value={authPassword}
                                 />
