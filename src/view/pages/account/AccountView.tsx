@@ -440,10 +440,12 @@ export function AccountView() {
                             </button>
                         </form>
 
-                        <p className="account-auth-note">
-                            После входа через Keycloak вы сможете управлять историей донатов, сохранять избранные материалы и переходить в чаты.
-                            <Link to="/donate"> Поддержать проект</Link>
-                        </p>
+                        {!import.meta.env.PROD && (
+                            <p className="account-auth-note">
+                                После входа через Keycloak вы сможете управлять историей донатов, сохранять избранные материалы и переходить в чаты.
+                                <Link to="/donate"> Поддержать проект</Link>
+                            </p>
+                        )}
                     </div>
                 </section>
             )}
