@@ -113,7 +113,12 @@
 
 .account-auth-error {
   margin: 0;
-  color: #ab1f1f;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid #f2bcc1;
+  background: #fff1f2;
+  color: #9f1239;
+  font-weight: 700;
 }
 
 .account-auth-note {
@@ -123,6 +128,44 @@
 
 .account-auth-note a {
   color: #153b9d;
+}
+
+.account-password-help {
+  margin: -2px 0 2px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  border: 1px solid #d8e1f4;
+  background: #f7f9fe;
+  color: #42506f;
+}
+
+.account-password-help p {
+  margin: 0 0 8px;
+  font-weight: 700;
+}
+
+.account-password-help ul {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.account-password-help li {
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: #ffffff;
+  border: 1px solid #dbe3f2;
+  color: #5b6683;
+  font-size: 0.92rem;
+}
+
+.account-password-help .account-password-rule-ok {
+  border-color: #a7d7bc;
+  background: #edf9f1;
+  color: #1f7a46;
 }
 
 .account-inline-link {
