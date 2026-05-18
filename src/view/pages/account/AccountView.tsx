@@ -11,6 +11,7 @@ import {
     getAccountProfile,
     getDonations,
     getFavorites,
+    requestPasswordReset,
     registerAccount,
     updateAccountProfile
 } from "../../../api/accountApi";
@@ -92,6 +93,8 @@ export function AccountView() {
     const [authPassword, setAuthPassword] = useState("");
     const [authError, setAuthError] = useState("");
     const [isAuthSubmitting, setIsAuthSubmitting] = useState(false);
+    const [isPasswordResetSubmitting, setIsPasswordResetSubmitting] = useState(false);
+    const [passwordResetMessage, setPasswordResetMessage] = useState("");
     const [profile, setProfile] = useState<AccountProfileResponse | null>(() => {
         const existingSession = readLocalAuthSession();
         return existingSession ? buildProfileFromSession(existingSession) : null;
@@ -210,7 +213,29 @@ export function AccountView() {
     const switchAuthMode = (mode: AuthMode) => {
         setAuthMode(mode);
         setAuthError("");
+        setPasswordResetMessage("");
         navigate(`/account?mode=${mode}`, {replace: true});
+    };
+
+    const handlePasswordReset = async () => {
+        const normalizedEmail = authEmail.trim().toLowerCase();
+        if (normalizedEmail.length === 0) {
+            setAuthError("Введите email для восстановления пароля.");
+            setPasswordResetMessage("");
+            return;
+        }
+
+        setAuthError("");
+        setPasswordResetMessage("");
+        setIsPasswordResetSubmitting(true);
+        try {
+            const result = await requestPasswordReset(normalizedEmail);
+            setPasswordResetMessage(result.message);
+        } catch {
+            setPasswordResetMessage("Если аккаунт с таким email существует, инструкция по восстановлению пароля отправлена.");
+        } finally {
+            setIsPasswordResetSubmitting(false);
+        }
     };
 
     const handleAuthSubmit = async (event: FormEvent<HTMLFormElement>) => {
@@ -477,6 +502,17 @@ export function AccountView() {
                             )}
 
                             {authError.length > 0 && <p className="account-auth-error">{authError}</p>}
+                            {passwordResetMessage.length > 0 && <p className="account-auth-success">{passwordResetMessage}</p>}
+                            {authMode === "login" && (
+                                <button
+                                    className="account-auth-forgot-password"
+                                    disabled={isPasswordResetSubmitting}
+                                    onClick={() => void handlePasswordReset()}
+                                    type="button"
+                                >
+                                    {isPasswordResetSubmitting ? "Отправляем инструкцию..." : "Забыли пароль?"}
+                                </button>
+                            )}
 
                             <button className="account-auth-submit" disabled={isAuthSubmitting} type="submit">
                                 {isAuthSubmitting

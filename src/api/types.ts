@@ -145,6 +145,11 @@ export interface RegisterAccountRequest {
     password: string
 }
 
+export interface AccountPasswordResetResponse {
+    status: string
+    message: string
+}
+
 export interface AccountChatSummaryResponse {
     chatId: string
     createdAt: string

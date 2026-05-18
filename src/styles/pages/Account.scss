@@ -121,6 +121,32 @@
   font-weight: 700;
 }
 
+.account-auth-success {
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid #b9e3c7;
+  background: #eefaf2;
+  color: #11663a;
+  font-weight: 700;
+}
+
+.account-auth-forgot-password {
+  justify-self: start;
+  border: 0;
+  background: transparent;
+  color: #153b9d;
+  font-weight: 700;
+  text-decoration: underline;
+  padding: 0;
+  cursor: pointer;
+}
+
+.account-auth-forgot-password:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
 .account-auth-note {
   margin: 12px 0 0;
   color: #5e6575;
