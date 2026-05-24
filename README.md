@@ -14,6 +14,20 @@ npm run dev
 
 Если нужен другой backend-адрес, можно переопределить его через `VITE_API_BASE_URL`.
 
+## Тестирование
+
+Команды:
+
+```bash
+npm run test:types
+npm run test
+npm run test:watch
+```
+
+- `test:types` — проверка TypeScript-конфигурации без сборки.
+- `test` — запуск UI-тестов в Vitest с coverage-отчётом.
+- `test:watch` — интерактивный режим для локальной разработки.
+
 ## Deployment
 
 Production-сборка frontend выполняется через GitHub Actions и публикуется в GitHub Container Registry как Docker-образ:
