@@ -291,7 +291,7 @@ export function ChatView() {
             <Breadcrumbs items={[{label: "Главная", to: "/home"}, {label: "ИИ-чат"}]}/>
             <section className="chat-shell">
                 <header className="chat-header">
-                    <h1>Чат с ИИ агентом</h1>
+                    <h1>ИИ-чат</h1>
                     <p>Чат подключен к API. История диалога сохраняется между сессиями по `chatId`.</p>
                 </header>
 
