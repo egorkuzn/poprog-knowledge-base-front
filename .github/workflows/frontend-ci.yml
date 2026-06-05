@@ -94,6 +94,7 @@ jobs:
           ssh -i ~/.ssh/deploy_key "$DEPLOY_USER@$DEPLOY_HOST" \
             "IMAGE='$IMAGE' GHCR_USER='$GHCR_USER' GHCR_TOKEN='$GHCR_TOKEN' bash -s" <<'REMOTE'
           set -euo pipefail
+          docker system prune -af
           mkdir -p ~/frontend
           cd ~/frontend
           cat > docker-compose.yml <<EOF2
