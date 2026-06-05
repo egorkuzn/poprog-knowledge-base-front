@@ -36,12 +36,28 @@ function formatMessageTime(value: string): string {
     return parsedDate.toLocaleTimeString([], {hour: "2-digit", minute: "2-digit"});
 }
 
+function normalizeWidget(widget: AiAssistantWidgetResponse | null | undefined): AiAssistantWidgetResponse | null {
+    if (!widget) {
+        return null;
+    }
+
+    return {
+        ...widget,
+        widgetType: widget.widgetType || "generic",
+        title: widget.title || "Подборка материалов",
+        subtitle: widget.subtitle ?? null,
+        items: Array.isArray(widget.items) ? widget.items : [],
+        actions: Array.isArray(widget.actions) ? widget.actions : [],
+        followUpOptions: Array.isArray(widget.followUpOptions) ? widget.followUpOptions : []
+    };
+}
+
 function mapHistoryMessage(message: ChatHistoryMessageResponse): ChatMessage {
     return {
         id: `history-${message.id}`,
         role: message.role,
         text: message.content,
-        widget: message.widget ?? null,
+        widget: normalizeWidget(message.widget),
         createdAt: formatMessageTime(message.createdAt)
     };
 }
@@ -254,7 +270,7 @@ export function ChatView() {
                 role: "assistant",
                 text: response.content,
                 createdAt: new Date().toLocaleTimeString([], {hour: "2-digit", minute: "2-digit"}),
-                widget: response.widget
+                widget: normalizeWidget(response.widget)
             };
 
             if (response.widget) {
