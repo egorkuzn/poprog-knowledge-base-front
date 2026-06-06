@@ -10,14 +10,31 @@
 }
 
 .home-hero {
+  position: relative;
   min-height: 680px;
   display: flex;
   align-items: center;
-  background-position: center;
-  background-size: cover;
+  overflow: hidden;
+  background: #05246d;
+}
+
+.home-hero-media {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+}
+
+.home-hero-media img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
 }
 
 .home-hero-content {
+  position: relative;
+  z-index: 1;
   max-width: 1200px;
   padding: 0 32px;
 }
@@ -386,7 +403,10 @@
 @media (max-width: 720px) {
   .home-hero {
     min-height: 520px;
-    background-position: 64% center;
+  }
+
+  .home-hero-media img {
+    object-position: 64% center;
   }
 
   .home-hero-content {
