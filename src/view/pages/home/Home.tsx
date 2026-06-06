@@ -4,7 +4,7 @@ import BodyView from "../BodyView";
 import "../../../styles/pages/Home.scss";
 import {submitSiteFeedback, type SiteFeedbackChoice} from "../../../api/siteFeedbackApi";
 import {trackMetricEvent} from "../../../utils/analytics";
-import heroBackground from "../../../assets/home/hero/hero-bg.png";
+import heroBackgroundWebp from "../../../assets/home/hero/hero-bg.webp";
 import caseOneImage from "../../../assets/home/cases/case-1.png";
 import caseTwoImage from "../../../assets/home/cases/case-2.png";
 import caseThreeImage from "../../../assets/home/cases/case-3.png";
@@ -122,7 +122,18 @@ export function Home() {
 
     return BodyView(
         <main className="home-page home-page-main" id="top">
-                <section className="home-hero" style={{backgroundImage: `url(${heroBackground})`}}>
+                <section className="home-hero">
+                    <div className="home-hero-media" aria-hidden="true">
+                        <img
+                            alt=""
+                            decoding="async"
+                            fetchPriority="high"
+                            height="650"
+                            loading="eager"
+                            src={heroBackgroundWebp}
+                            width="1920"
+                        />
+                    </div>
                     <div className="home-hero-content">
                         <h1>Процесс-ориентированное программирование -</h1>
                         <p>эффективная технология разработки управляющих программ в виде набора взаимодействующих процессов</p>
